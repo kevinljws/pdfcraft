@@ -11,7 +11,7 @@ import type {
 	VerticalAlignmentItem,
 } from "./renderer.types";
 
-abstract class RendererGraphics {
+class RendererGraphics {
 	protected readonly pdfDocument: PDFDocument;
 	private vectorState: {
 		lineWidth?: number;
@@ -21,15 +21,27 @@ abstract class RendererGraphics {
 	} = {};
 	private clipDepth = 0;
 
-	protected constructor(pdfDocument: PDFDocument) {
+	constructor(pdfDocument: PDFDocument) {
 		this.pdfDocument = pdfDocument;
 	}
 
-	protected resetVectorState(): void {
+	beginPage(): void {
+		this.resetVectorState();
+	}
+
+	prepareNonVectorItem(): void {
+		this.resetVectorState();
+	}
+
+	endPage(): void {
+		this.assertClippingBalanced();
+	}
+
+	private resetVectorState(): void {
 		this.vectorState = {};
 	}
 
-	protected assertClippingBalanced(): void {
+	private assertClippingBalanced(): void {
 		if (this.clipDepth !== 0) {
 			throw new Error(
 				`Unbalanced clipping operations: ${this.clipDepth} clip region(s) not closed`,

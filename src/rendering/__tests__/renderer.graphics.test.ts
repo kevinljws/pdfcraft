@@ -6,6 +6,7 @@ vi.mock("svg-to-pdfkit", () => ({ default: svgToPdf }));
 import type { LayoutPdfNode, Vector } from "../../types/internal";
 import type PDFDocument from "../pdf-document";
 import Renderer from "../renderer";
+import RendererGraphics from "../renderer.graphics";
 
 const createDocument = () => {
 	const action = { end: vi.fn() };
@@ -61,7 +62,7 @@ describe("Renderer graphics", () => {
 		const { document } = createDocument();
 		const gradient = { stop: vi.fn() };
 		document.linearGradient.mockReturnValue(gradient);
-		const renderer = new Renderer(document as unknown as PDFDocument);
+		const renderer = new RendererGraphics(document as unknown as PDFDocument);
 
 		renderer.renderVector({
 			type: "rect",
@@ -120,7 +121,7 @@ describe("Renderer graphics", () => {
 		const { document } = createDocument();
 		const pattern = ["pattern", "red"];
 		document.providePattern.mockReturnValue(pattern);
-		const renderer = new Renderer(document as unknown as PDFDocument);
+		const renderer = new RendererGraphics(document as unknown as PDFDocument);
 		const vector: Vector = {
 			type: "polyline",
 			points: [
@@ -140,7 +141,7 @@ describe("Renderer graphics", () => {
 
 	it("renders covered images and all supported annotations", () => {
 		const { document, action } = createDocument();
-		const renderer = new Renderer(document as unknown as PDFDocument);
+		const renderer = new RendererGraphics(document as unknown as PDFDocument);
 		const image = {
 			image: "image",
 			x: 10,
@@ -184,7 +185,7 @@ describe("Renderer graphics", () => {
 
 	it("renders normally sized images without clipping", () => {
 		const { document } = createDocument();
-		const renderer = new Renderer(document as unknown as PDFDocument);
+		const renderer = new RendererGraphics(document as unknown as PDFDocument);
 
 		renderer.renderImage({ image: "image", x: 1, y: 2, _width: 3, _height: 4 } as LayoutPdfNode);
 
@@ -194,7 +195,7 @@ describe("Renderer graphics", () => {
 
 	it("passes SVG options, resolves fonts and renders links", () => {
 		const { document, action } = createDocument();
-		const renderer = new Renderer(document as unknown as PDFDocument);
+		const renderer = new RendererGraphics(document as unknown as PDFDocument);
 		const svg = {
 			svg: "<svg/>",
 			x: 5,
@@ -231,7 +232,7 @@ describe("Renderer graphics", () => {
 	it("reports a missing SVG font style", () => {
 		const { document } = createDocument();
 		document.getFontFile.mockReturnValue(null);
-		const renderer = new Renderer(document as unknown as PDFDocument);
+		const renderer = new RendererGraphics(document as unknown as PDFDocument);
 		renderer.renderSVG({ svg: "<svg/>", x: 0, y: 0, _width: 10, _height: 10 } as LayoutPdfNode);
 		const options = svgToPdf.mock.calls[0][4];
 
@@ -242,7 +243,7 @@ describe("Renderer graphics", () => {
 
 	it("renders attachment icons, vertical alignment and watermarks", () => {
 		const { document } = createDocument();
-		const renderer = new Renderer(document as unknown as PDFDocument);
+		const renderer = new RendererGraphics(document as unknown as PDFDocument);
 		const middle = {
 			isCellContentMultiPage: false,
 			verticalAlignment: "middle" as const,

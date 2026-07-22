@@ -14,12 +14,15 @@ import type {
 	VerticalAlignmentItem,
 } from "./renderer.types";
 
-class Renderer extends RendererGraphics {
+class Renderer {
+	private readonly pdfDocument: PDFDocument;
+	private readonly graphics: RendererGraphics;
 	private readonly progressCallback: ((progress: number) => void) | undefined;
 	private readonly outlineMap: Record<string, PDFKit.PDFOutline> = {};
 
 	constructor(pdfDocument: PDFDocument, progressCallback?: (progress: number) => void) {
-		super(pdfDocument);
+		this.pdfDocument = pdfDocument;
+		this.graphics = new RendererGraphics(pdfDocument);
 		this.progressCallback = progressCallback;
 	}
 
@@ -33,40 +36,40 @@ class Renderer extends RendererGraphics {
 
 		for (const page of pages) {
 			this.pdfDocument.addPage({ size: [page.pageSize.width, page.pageSize.height] });
-			this.resetVectorState();
+			this.graphics.beginPage();
 
 			for (const item of page.items) {
 				if (item.type !== "vector") {
-					this.resetVectorState();
+					this.graphics.prepareNonVectorItem();
 				}
 
 				switch (item.type) {
 					case "vector":
-						this.renderVector(item.item);
+						this.graphics.renderVector(item.item);
 						break;
 					case "line":
 						this.renderLine(item.item, item.item.x ?? 0, item.item.y ?? 0);
 						break;
 					case "image":
-						this.renderImage(item.item);
+						this.graphics.renderImage(item.item);
 						break;
 					case "svg":
-						this.renderSVG(item.item);
+						this.graphics.renderSVG(item.item);
 						break;
 					case "attachment":
-						this.renderAttachment(item.item);
+						this.graphics.renderAttachment(item.item);
 						break;
 					case "beginClip":
-						this.beginClip(item.item as ClipRectangle);
+						this.graphics.beginClip(item.item as ClipRectangle);
 						break;
 					case "endClip":
-						this.endClip();
+						this.graphics.endClip();
 						break;
 					case "beginVerticalAlignment":
-						this.beginVerticalAlignment(item.item as VerticalAlignmentItem);
+						this.graphics.beginVerticalAlignment(item.item as VerticalAlignmentItem);
 						break;
 					case "endVerticalAlignment":
-						this.endVerticalAlignment(item.item as VerticalAlignmentItem);
+						this.graphics.endVerticalAlignment(item.item as VerticalAlignmentItem);
 						break;
 				}
 
@@ -74,10 +77,10 @@ class Renderer extends RendererGraphics {
 				this.progressCallback?.(renderedItems / totalItems);
 			}
 
-			this.assertClippingBalanced();
+			this.graphics.endPage();
 
 			if (page.watermark) {
-				this.renderWatermark(page);
+				this.graphics.renderWatermark(page);
 			}
 		}
 	}
