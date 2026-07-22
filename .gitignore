@@ -3,6 +3,7 @@ dist/
 node_modules/
 pdfmake/
 private/
+.cursor/
 .DS_Store
 .idea
 .env
