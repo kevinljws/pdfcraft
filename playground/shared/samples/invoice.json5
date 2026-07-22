@@ -6,9 +6,9 @@
 	pageSize: 'A4',
 	pageMargins: [48, 48, 48, 48],
 	info: {
-		title: 'Facture 03',
-		author: 'Total Energie SAS',
-		subject: 'Facture client'
+		title: 'Facture QZ-8741',
+		author: 'Orbe & Sève SAS',
+		subject: 'Facture Atelier Quasar'
 	},
 	files: {
 		'factur-x.xml': {
@@ -30,20 +30,20 @@
 							width: 70,
 							margin: [0, 0, 0, 10]
 						},
-						{text: 'Total Energie SAS', style: 'companyName'},
-						{text: '18 rue Bezout'},
-						{text: '75014 PARIS'},
+						{text: 'Orbe & Sève SAS', style: 'companyName'},
+						{text: '7 passage des Lucioles'},
+						{text: '44000 Nantes'},
 						{text: 'France'},
-						{text: 'SIREN : 904 346 152', bold:true, margin: [0, 8, 0, 0]}
+						{text: 'SIREN : 731 508 264', bold:true, margin: [0, 8, 0, 0]}
 					]
 				},
 				{
 					stack: [
-						{text: 'Michel SAS', bold: true},
-						{text: '10 avenue des pépinières'},
-						{text: '94260 Fresnes, France'},
-						{text: 'SIREN : 844 589 226', margin: [0, 8, 0, 0]},
-						{text: 'N° de TVA : FR38 844 589 226'}
+						{text: 'Atelier Quasar SARL', bold: true},
+						{text: '42 quai des Météores'},
+						{text: '69007 Lyon, France'},
+						{text: 'SIREN : 582 947 130', margin: [0, 8, 0, 0]},
+						{text: 'N° de TVA : FR61 582 947 130'}
 					],
 					margin: [0, 50, 0, 0],
 					alignment: 'right'
@@ -57,9 +57,9 @@
 				{
 					table: {
 						body: [
-							[{text: 'N° de facture', bold: true}, '03'],
-							[{text: 'Date d’émission', bold: true}, '25/01/2023'],
-							[{text: 'Date limite de paiement', bold: true}, '25/02/2023']
+							[{text: 'N° de facture', bold: true}, 'QZ-8741'],
+							[{text: 'Date d’émission', bold: true}, '17/06/2026'],
+							[{text: 'Date limite de paiement', bold: true}, '17/07/2026']
 						]
 					},
 					layout: 'noBorders'
@@ -80,90 +80,90 @@
 					[
 						{
 							stack: [
-								{text: 'Electricité mensuelle', bold: true},
-								{text: 'Abonnement plateforme', color: '#555555', margin: [0, 3, 0, 0]}
+								{text: 'Installation de balises atmosphériques', bold: true},
+								{text: 'Lot pilote — site Aurore', color: '#555555', margin: [0, 3, 0, 0]}
 							]
 						},
-						{text: '1', alignment: 'center'},
-						{text: '50 €', alignment: 'right'},
-						{text: '600 €', alignment: 'right'}
+						{text: '2', alignment: 'center'},
+						{text: '240 €', alignment: 'right'},
+						{text: '480 €', alignment: 'right'}
 					],
 					[
 						{
 							stack: [
-								{text: 'Renouvellement tacite', bold: true},
-								{text: 'Abonnement annuel', color: '#555555', margin: [0, 3, 0, 0]}
+								{text: 'Étude de lumière bioluminescente', bold: true},
+								{text: 'Analyse nocturne — zone Boréale', color: '#555555', margin: [0, 3, 0, 0]}
 							]
 						},
 						{text: '1', alignment: 'center'},
-						{text: '80 €', alignment: 'right'},
-						{text: '960 €', alignment: 'right'}
+						{text: '620 €', alignment: 'right'},
+						{text: '620 €', alignment: 'right'}
 					],
 					[
 						{
 							stack: [
-								{text: 'Renouvellement tacite', bold: true},
-								{text: 'Abonnement annuel', color: '#555555', margin: [0, 3, 0, 0]}
+								{text: 'Cartographie des flux sonores', bold: true},
+								{text: 'Relevés sur trois points d’écoute', color: '#555555', margin: [0, 3, 0, 0]}
 							]
 						},
-						{text: '1', alignment: 'center'},
-						{text: '80 €', alignment: 'right'},
-						{text: '960 €', alignment: 'right'}
+						{text: '3', alignment: 'center'},
+						{text: '145 €', alignment: 'right'},
+						{text: '435 €', alignment: 'right'}
 					],
 					[
 						{
 							stack: [
-								{text: 'Renouvellement tacite', bold: true},
-								{text: 'Abonnement annuel', color: '#555555', margin: [0, 3, 0, 0]}
+								{text: 'Prototype de signalétique céleste', bold: true},
+								{text: 'Panneaux directionnels phosphorescents', color: '#555555', margin: [0, 3, 0, 0]}
 							]
 						},
-						{text: '1', alignment: 'center'},
-						{text: '80 €', alignment: 'right'},
-						{text: '960 €', alignment: 'right'}
+						{text: '2', alignment: 'center'},
+						{text: '310 €', alignment: 'right'},
+						{text: '620 €', alignment: 'right'}
 					],
 					[
 						{
 							stack: [
-								{text: 'Renouvellement tacite', bold: true},
-								{text: 'Abonnement annuel', color: '#555555', margin: [0, 3, 0, 0]}
+								{text: 'Atelier d’orientation stellaire', bold: true},
+								{text: 'Session collective de deux heures', color: '#555555', margin: [0, 3, 0, 0]}
 							]
 						},
-						{text: '1', alignment: 'center'},
-						{text: '80 €', alignment: 'right'},
-						{text: '960 €', alignment: 'right'}
+						{text: '4', alignment: 'center'},
+						{text: '95 €', alignment: 'right'},
+						{text: '380 €', alignment: 'right'}
 					],
 					[
 						{
 							stack: [
-								{text: 'Renouvellement tacite', bold: true},
-								{text: 'Abonnement annuel', color: '#555555', margin: [0, 3, 0, 0]}
+								{text: 'Licence typographique Nébuleuse', bold: true},
+								{text: 'Licence commerciale perpétuelle', color: '#555555', margin: [0, 3, 0, 0]}
 							]
 						},
 						{text: '1', alignment: 'center'},
-						{text: '80 €', alignment: 'right'},
-						{text: '960 €', alignment: 'right'}
+						{text: '260 €', alignment: 'right'},
+						{text: '260 €', alignment: 'right'}
 					],
 					[
 						{
 							stack: [
-								{text: 'Renouvellement tacite', bold: true},
-								{text: 'Abonnement annuel', color: '#555555', margin: [0, 3, 0, 0]}
+								{text: 'Support de lancement orbital', bold: true},
+								{text: 'Assistance à distance — crédit horaire', color: '#555555', margin: [0, 3, 0, 0]}
 							]
 						},
-						{text: '1', alignment: 'center'},
-						{text: '80 €', alignment: 'right'},
-						{text: '960 €', alignment: 'right'}
+						{text: '6', alignment: 'center'},
+						{text: '55 €', alignment: 'right'},
+						{text: '330 €', alignment: 'right'}
 					],
 					[
 						{
 							stack: [
-								{text: 'Renouvellement tacite', bold: true},
-								{text: 'Abonnement annuel', color: '#555555', margin: [0, 3, 0, 0]}
+								{text: 'Archivage des relevés cosmiques', bold: true},
+								{text: 'Conservation chiffrée — douze mois', color: '#555555', margin: [0, 3, 0, 0]}
 							]
 						},
-						{text: '1', alignment: 'center'},
-						{text: '80 €', alignment: 'right'},
-						{text: '960 €', alignment: 'right'}
+						{text: '12', alignment: 'center'},
+						{text: '24 €', alignment: 'right'},
+						{text: '288 €', alignment: 'right'}
 					]
 				]
 			},
@@ -204,9 +204,9 @@
 					table: {
 						widths: ['*', 75],
 						body: [
-							[{text: 'Sous-total :', bold: true}, {text: '1 560 €', alignment: 'right'}],
-							[{text: 'TVA (20 %) :', bold: true}, {text: '327 €', alignment: 'right'}],
-							[{text: 'Total :', style: 'total'}, {text: '1 887 €', style: 'total', alignment: 'right'}]
+							[{text: 'Sous-total :', bold: true}, {text: '3 413,00 €', alignment: 'right'}],
+							[{text: 'TVA (20 %) :', bold: true}, {text: '682,60 €', alignment: 'right'}],
+							[{text: 'Total :', style: 'total'}, {text: '4 095,60 €', style: 'total', alignment: 'right'}]
 						],
 					},
 					layout: {
@@ -233,8 +233,9 @@
 		{
 			stack: [
 				{text: 'Informations de paiement', style: 'sectionTitle'},
-				{text: [{text: 'BIC : ', bold: true}, 'TRZOFR21XXX']},
-				{text: [{text: 'IBAN : ', bold: true}, 'FR76 1679 8000 0100 0064 2855 884']}
+				{text: [{text: 'BIC : ', bold: true}, 'ORBEFRPPXXX']},
+				{text: [{text: 'IBAN : ', bold: true}, 'FR14 0099 8877 6655 4433 2211 008']},
+				{text: 'Coordonnées bancaires fictives — document de démonstration', italics: true, color: '#777777', margin: [0, 4, 0, 0]}
 			],
 			margin: [0, 34, 0, 26]
 		},
