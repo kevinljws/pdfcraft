@@ -4,11 +4,34 @@ import { getNodeId } from "../utils/node";
 import { offsetVector } from "../utils/tools";
 import TextInlines from "../text/text-inlines";
 import { addAll, cloneInline, findMaxFitLength } from "./layout-builder.helpers";
-import LayoutBuilderRows from "./layout-builder.rows";
+import type PageElementWriter from "./element-writer.page";
 import Line from "./line";
 
-abstract class LayoutBuilderContent extends LayoutBuilderRows {
-	abstract pageSize: { width: number };
+export interface LayoutBuilderContentHost {
+	writer: PageElementWriter;
+	pageSize: { width: number };
+	processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed?: boolean): void;
+	snakingAwarePageBreak(pageOrientation?: string): void;
+}
+
+class LayoutBuilderContent {
+	constructor(private readonly host: LayoutBuilderContentHost) {}
+
+	private get writer(): PageElementWriter {
+		return this.host.writer;
+	}
+
+	private get pageSize(): { width: number } {
+		return this.host.pageSize;
+	}
+
+	private processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed?: boolean): void {
+		this.host.processNode(node, isVerticalAlignmentAllowed);
+	}
+
+	private snakingAwarePageBreak(pageOrientation?: string): void {
+		this.host.snakingAwarePageBreak(pageOrientation);
+	}
 
 	// lists
 	processList(orderedList: boolean, node: LayoutPdfNode): void {

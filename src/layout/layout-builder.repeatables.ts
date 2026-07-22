@@ -5,7 +5,6 @@ import type { Style } from "../types";
 import type { LayoutPdfNode } from "../types/internal";
 import { isString } from "../utils/variable-type";
 import type PageElementWriter from "./element-writer.page";
-import LayoutBuilderContent from "./layout-builder.content";
 import type {
 	BackgroundGetter,
 	DynamicNodeGetter,
@@ -14,10 +13,31 @@ import type {
 } from "./layout-builder.types";
 import { createWatermark } from "./layout-builder.watermark";
 
-abstract class LayoutBuilderRepeatables extends LayoutBuilderContent {
-	abstract override writer: PageElementWriter;
-	abstract docPreprocessor: DocPreprocessor;
-	abstract docMeasure: DocMeasure;
+export interface LayoutBuilderRepeatablesHost {
+	writer: PageElementWriter;
+	docPreprocessor: DocPreprocessor;
+	docMeasure: DocMeasure;
+	processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed?: boolean): void;
+}
+
+class LayoutBuilderRepeatables {
+	constructor(private readonly host: LayoutBuilderRepeatablesHost) {}
+
+	private get writer(): PageElementWriter {
+		return this.host.writer;
+	}
+
+	private get docPreprocessor(): DocPreprocessor {
+		return this.host.docPreprocessor;
+	}
+
+	private get docMeasure(): DocMeasure {
+		return this.host.docMeasure;
+	}
+
+	private processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed?: boolean): void {
+		this.host.processNode(node, isVerticalAlignmentAllowed);
+	}
 
 	addBackground(background: unknown): void {
 		const getBackground: BackgroundGetter =

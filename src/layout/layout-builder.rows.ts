@@ -36,13 +36,40 @@ export interface ProcessRowResult {
 	positions: Position[];
 }
 
-abstract class LayoutBuilderRows {
-	abstract writer: PageElementWriter;
-	abstract nestedLevel: number;
-	abstract verticalAlignmentItemStack: VerticalAlignmentStackEntry[];
+export interface LayoutBuilderRowsHost {
+	writer: PageElementWriter;
+	nestedLevel: number;
+	verticalAlignmentItemStack: VerticalAlignmentStackEntry[];
+	processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed?: boolean): void;
+	snakingAwarePageBreak(pageOrientation?: string): void;
+}
 
-	abstract processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed?: boolean): void;
-	abstract snakingAwarePageBreak(pageOrientation?: string): void;
+class LayoutBuilderRows {
+	constructor(private readonly host: LayoutBuilderRowsHost) {}
+
+	get writer(): PageElementWriter {
+		return this.host.writer;
+	}
+
+	get nestedLevel(): number {
+		return this.host.nestedLevel;
+	}
+
+	set nestedLevel(value: number) {
+		this.host.nestedLevel = value;
+	}
+
+	get verticalAlignmentItemStack(): VerticalAlignmentStackEntry[] {
+		return this.host.verticalAlignmentItemStack;
+	}
+
+	processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed?: boolean): void {
+		this.host.processNode(node, isVerticalAlignmentAllowed);
+	}
+
+	snakingAwarePageBreak(pageOrientation?: string): void {
+		this.host.snakingAwarePageBreak(pageOrientation);
+	}
 
 	processRow({
 		marginX = [0, 0],

@@ -9,7 +9,9 @@ import type { LayoutPdfNode, MeasuredPdfNode, PreprocessedPdfNode } from "../typ
 import { decorateNode } from "./node.decorators";
 import { addAll, getPageSpanHeight } from "./layout-builder.helpers";
 import { addPageBreaksIfNecessary, resetNodePositions } from "./layout-builder.page-breaks";
+import LayoutBuilderContent from "./layout-builder.content";
 import LayoutBuilderRepeatables from "./layout-builder.repeatables";
+import LayoutBuilderRows from "./layout-builder.rows";
 import type SVGMeasure from "../measurement/svg-measure";
 import type PDFDocument from "../rendering/pdf-document";
 import type {
@@ -28,7 +30,7 @@ type TableLayoutSource = Partial<TableLayout> | PublicTableLayout;
  * Layout engine which turns document-definition-object into a set of pages, lines, inlines
  * and vectors ready to be rendered into a PDF
  */
-class LayoutBuilder extends LayoutBuilderRepeatables {
+class LayoutBuilder {
 	pageSize: PageSize;
 	pageMargins: PageMargins;
 	svgMeasure: SVGMeasure;
@@ -39,6 +41,9 @@ class LayoutBuilder extends LayoutBuilderRepeatables {
 	docMeasure!: DocMeasure;
 	linearNodeList: LayoutPdfNode[] = [];
 	writer!: PageElementWriter;
+	private readonly rows: LayoutBuilderRows;
+	private readonly content: LayoutBuilderContent;
+	private readonly repeatables: LayoutBuilderRepeatables;
 
 	/**
 	 * @param pageSize - an object defining page width and height
@@ -46,10 +51,12 @@ class LayoutBuilder extends LayoutBuilderRepeatables {
 	 * @param svgMeasure
 	 */
 	constructor(pageSize: PageSize, pageMargins: PageMargins, svgMeasure: SVGMeasure) {
-		super();
 		this.pageSize = pageSize;
 		this.pageMargins = pageMargins;
 		this.svgMeasure = svgMeasure;
+		this.rows = new LayoutBuilderRows(this);
+		this.content = new LayoutBuilderContent(this);
+		this.repeatables = new LayoutBuilderRepeatables(this);
 	}
 
 	registerTableLayouts(tableLayouts: Dictionary<TableLayoutSource>): void {
@@ -57,6 +64,12 @@ class LayoutBuilder extends LayoutBuilderRepeatables {
 			this.tableLayouts,
 			tableLayouts as Dictionary<Partial<TableLayout<MeasuredPdfNode>>>,
 		);
+	}
+
+	processRow(
+		options: Parameters<LayoutBuilderRows["processRow"]>[0],
+	): ReturnType<LayoutBuilderRows["processRow"]> {
+		return this.rows.processRow(options);
 	}
 
 	private moveDownWithPageBreak(height: number, pageOrientation?: PageOrientation): void {
@@ -182,7 +195,7 @@ class LayoutBuilder extends LayoutBuilderRepeatables {
 				backgroundGetter = page.customProperties["background"];
 			}
 
-			this.addBackground(backgroundGetter);
+			this.repeatables.addBackground(backgroundGetter);
 		});
 
 		if (isNecessaryAddFirstPage(layoutDocument)) {
@@ -190,8 +203,8 @@ class LayoutBuilder extends LayoutBuilderRepeatables {
 		}
 
 		this.processNode(layoutDocument);
-		this.addHeadersAndFooters(header, footer);
-		this.addWatermark(watermark, pdfDocument, defaultStyle);
+		this.repeatables.addHeadersAndFooters(header, footer);
+		this.repeatables.addWatermark(watermark, pdfDocument, defaultStyle);
 
 		return { pages: this.writer.context().pages, linearNodeList: this.linearNodeList };
 	}
@@ -286,25 +299,25 @@ class LayoutBuilder extends LayoutBuilderRepeatables {
 			} else if (node.columns) {
 				this.processColumns(node);
 			} else if (node.ul) {
-				this.processList(false, node);
+				this.content.processList(false, node);
 			} else if (node.ol) {
-				this.processList(true, node);
+				this.content.processList(true, node);
 			} else if (node.table) {
-				this.processTable(node);
+				this.rows.processTable(node);
 			} else if (node.text !== undefined) {
-				this.processLeaf(node);
+				this.content.processLeaf(node);
 			} else if (node.toc) {
-				this.processToc(node);
+				this.content.processToc(node);
 			} else if (node.image) {
-				this.processImage(node);
+				this.content.processImage(node);
 			} else if (node.svg) {
-				this.processSVG(node);
+				this.content.processSVG(node);
 			} else if (node.canvas) {
-				this.processCanvas(node);
+				this.content.processCanvas(node);
 			} else if (node.qr) {
-				this.processQr(node);
+				this.content.processQr(node);
 			} else if (node.attachment) {
-				this.processAttachment(node);
+				this.content.processAttachment(node);
 			} else if (!node._span) {
 				throw new Error(`Unrecognized document structure: ${stringifyNode(node)}`);
 			}
