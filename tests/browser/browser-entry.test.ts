@@ -1,5 +1,5 @@
-import { assert, describe, it } from "vitest";
-import type OutputDocumentBrowser from "../../src/output/output-document.browser";
+import { assert, describe, expect, it, vi } from "vitest";
+import OutputDocumentBrowser from "../../src/output/output-document.browser";
 import type { PdfDocumentStream } from "../../src/output/output-document";
 import type pdfcraftEntry from "pdfcraft/browser";
 
@@ -35,8 +35,16 @@ class FakePdfStream {
 		});
 	}
 
-	setOpenActionAsPrint(): void {}
+	setOpenActionAsPrint = vi.fn();
 }
+
+const createOutput = (): { output: OutputDocumentBrowser; stream: FakePdfStream } => {
+	const stream = new FakePdfStream();
+	return {
+		output: new OutputDocumentBrowser(Promise.resolve(stream as unknown as PdfDocumentStream)),
+		stream,
+	};
+};
 
 describe("browser package entry", function () {
 	async function assertBrowserOutput(pdfcraft: typeof pdfcraftEntry) {
@@ -81,5 +89,48 @@ describe("browser package entry", function () {
 
 		assert.equal(blob.type, "application/pdf");
 		assert.isAbove(blob.size, 0);
+	});
+
+	it("creates browser data URLs, blobs and downloads", async function () {
+		const { output } = createOutput();
+		const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:pdfcraft");
+		const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+		const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+		expect(await output.getDataUrl()).toBe("data:application/pdf;base64,AQID");
+		const blob = await output.getBlob();
+		expect(blob.type).toBe("application/pdf");
+		expect(blob.size).toBe(3);
+		await output.download("report.pdf");
+
+		expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+		expect(click).toHaveBeenCalledOnce();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(revokeObjectURL).toHaveBeenCalledWith("blob:pdfcraft");
+	});
+
+	it("opens and prints into a supplied window", async function () {
+		const { output, stream } = createOutput();
+		vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:pdfcraft");
+		const target = { location: { href: "" }, close: vi.fn() } as unknown as Window;
+
+		await output.print(target);
+
+		expect(stream.setOpenActionAsPrint).toHaveBeenCalledOnce();
+		expect(target.location.href).toBe("blob:pdfcraft");
+	});
+
+	it("reports blocked windows and closes supplied windows after an open failure", async function () {
+		const blocked = createOutput().output;
+		vi.spyOn(window, "open").mockReturnValue(null);
+		await expect(blocked.open()).rejects.toThrow("Open PDF in new window blocked by browser");
+
+		const failing = createOutput().output;
+		vi.spyOn(URL, "createObjectURL").mockImplementation(() => {
+			throw new Error("URL failed");
+		});
+		const target = { location: { href: "" }, close: vi.fn() } as unknown as Window;
+		await expect(failing.open(target)).rejects.toThrow("URL failed");
+		expect(target.close).toHaveBeenCalledOnce();
 	});
 });
