@@ -26,6 +26,7 @@ export function getPageItemBottom(item: PageItem): number {
 		case "image":
 		case "svg":
 		case "attachment":
+		case "acroform":
 			return (item.item.y ?? 0) + (item.item._height ?? 0);
 		case "beginClip":
 			return (item.item.y ?? 0) + (item.item.height ?? 0);

@@ -28,4 +28,22 @@ describe("resolvePrinterUrls", () => {
 		});
 		expect(resolveReference).toHaveBeenCalledOnce();
 	});
+
+	it("resolves named SVG resources", async () => {
+		const resolveReference = vi.fn((url: string) => `resolved:${url}`);
+		const documentDefinition: PrinterDocumentDefinition = {
+			content: [],
+			svgs: { logo: "https://example.com/logo.svg" },
+		};
+		const resolver = {
+			resolveReference,
+			resolved: vi.fn(async () => {}),
+		} as unknown as URLResolver;
+
+		await resolvePrinterUrls(documentDefinition, {}, resolver);
+
+		expect(documentDefinition.svgs).toEqual({
+			logo: "resolved:https://example.com/logo.svg",
+		});
+	});
 });

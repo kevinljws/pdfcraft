@@ -32,6 +32,20 @@ describe("TextBreaker", function () {
 	var styleStackWordBreakBreakAll = new StyleContextStack({}, { wordBreak: "break-all" });
 
 	describe("getBreaks", function () {
+		it("keeps image fragments intact between text fragments", function () {
+			const result = textBreaker.getBreaks([
+				{ text: "before " },
+				{ image: "icon", width: 12, height: 8 },
+				{ text: " after" },
+			]);
+			const image = result.find((inline) => inline.image === "icon");
+
+			assert(image);
+			assert.equal(image.text, "");
+			assert.equal(image.width, 12);
+			assert.equal(image.height, 8);
+		});
+
 		it("should do basic splitting", function () {
 			var result = textBreaker.getBreaks(sampleText);
 			assert.equal(result.length, 8);

@@ -69,6 +69,7 @@ export function beginColumn(
 	calculateBottomMost(state, saved, endingCell);
 
 	state.page = saved.page;
+	state.pageMargins = state.pages[state.page]?.pageMargins ?? state.pageMargins;
 	state.x += state.lastColumnWidth + offset;
 	state.y = saved.y;
 	state.availableWidth = width;
@@ -98,6 +99,7 @@ export function markEnding(
 	if (!endingContext) throw new Error("Column ending context is missing");
 
 	state.page = endingContext.page;
+	state.pageMargins = state.pages[state.page]?.pageMargins ?? state.pageMargins;
 	state.x = endingContext.x + originalXOffset;
 	state.y = endingContext.y - discountY;
 	state.availableWidth = endingContext.availableWidth;
@@ -179,6 +181,7 @@ export function completeColumnGroup(
 
 	state.y = y;
 	state.page = saved.bottomMost.page;
+	state.pageMargins = state.pages[state.page]?.pageMargins ?? state.pageMargins;
 	state.availableWidth = saved.availableWidth;
 	state.availableHeight = saved.bottomMost.availableHeight;
 	if (height) state.availableHeight -= y - saved.bottomMost.y;

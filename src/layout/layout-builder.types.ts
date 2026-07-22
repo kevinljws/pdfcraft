@@ -4,6 +4,7 @@ import type { LayoutPdfNode, PageMargins, PageSize, PdfPage, Position } from "..
 export interface LayoutResult {
 	pages: PdfPage[];
 	linearNodeList: LayoutPdfNode[];
+	pageMarginFunctionUsed?: boolean;
 }
 
 export interface PageBreakNodeInfo extends Record<string, unknown> {

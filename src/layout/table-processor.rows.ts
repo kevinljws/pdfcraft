@@ -2,6 +2,8 @@ import type PageElementWriter from "./element-writer.page";
 import { isNumber } from "../utils/variable-type";
 import type { TableProcessorState } from "./table-processor.types";
 
+const TABLE_FILL_CORRECTION = 0.5;
+
 export interface TableLinePosition {
 	x: number;
 	index: number;
@@ -41,6 +43,10 @@ export function drawTableRowSegment(
 ): void {
 	const body = processor.tableNode.table!.body;
 	const { y1, y2, willBreak, horizontalLineOffset } = segment;
+	let lastCellIndex = -1;
+	for (let i = 0; i < xs.length - 1; i++) {
+		lastCellIndex = Math.max(lastCellIndex, xs[i].index);
+	}
 
 	for (let i = 0, l = xs.length; i < l; i++) {
 		let leftCellBorder = false;
@@ -120,12 +126,20 @@ export function drawTableRowSegment(
 		const fillY2 = processor.dontBreakRows
 			? y2 + processor.bottomLineWidth
 			: y2 + processor.bottomLineWidth / 2;
+		const isFirstCell = colIndex === 0;
+		const isLastCell = colIndex === lastCellIndex;
+		const horizontalCorrection =
+			lastCellIndex === 0
+				? 0
+				: isFirstCell || isLastCell
+					? TABLE_FILL_CORRECTION
+					: TABLE_FILL_CORRECTION * 2;
 		const rectangle = {
 			type: "rect" as const,
-			x: x1,
-			y: fillY1,
-			w: x2 - x1,
-			h: fillY2 - fillY1,
+			x: x1 - (isFirstCell ? 0 : TABLE_FILL_CORRECTION),
+			y: fillY1 - TABLE_FILL_CORRECTION,
+			w: x2 - x1 + horizontalCorrection,
+			h: fillY2 - fillY1 + TABLE_FILL_CORRECTION * 2,
 			lineWidth: 0,
 		};
 		if (fillColor) {

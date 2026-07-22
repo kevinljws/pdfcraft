@@ -134,11 +134,37 @@ class DocPreprocessor {
 			return this.preprocessQr(node);
 		} else if (node.attachment) {
 			return this.preprocessAttachment(node);
+		} else if (node.acroform) {
+			return this.preprocessAcroForm(node);
 		} else if (node.pageReference || node.textReference) {
 			return this.preprocessText(node);
 		} else {
 			throw new Error(`Unrecognized document structure: ${stringifyNode(node)}`);
 		}
+	}
+
+	preprocessAcroForm(node: PreprocessedPdfNode): PreprocessedPdfNode {
+		const form = node.acroform;
+		if (!isObject(form)) {
+			throw new Error(`Invalid AcroForm node: 'acroform' must be an object`);
+		}
+		if (typeof form.id !== "string" || form.id.trim().length === 0) {
+			throw new Error(`Invalid AcroForm node: 'acroform.id' must be a non-empty string`);
+		}
+		if (!["text", "button", "list", "combo", "checkbox"].includes(form.type)) {
+			throw new Error(`Invalid AcroForm node: unsupported field type '${String(form.type)}'`);
+		}
+		if (
+			node.width !== undefined &&
+			node.width !== "*" &&
+			!(isNumber(node.width) && node.width > 0)
+		) {
+			throw new Error(`Invalid AcroForm node: 'width' must be a positive number or '*'`);
+		}
+		if (node.height !== undefined && !(isNumber(node.height) && node.height > 0)) {
+			throw new Error(`Invalid AcroForm node: 'height' must be a positive number`);
+		}
+		return node;
 	}
 
 	preprocessSection(node: PreprocessedPdfNode): PreprocessedPdfNode {

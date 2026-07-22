@@ -5,6 +5,7 @@ import type {
 	PageSize,
 	PageSizeName,
 	PdfSubset,
+	ResolvedPageSize,
 } from "./common.types";
 import type { Content, DynamicContent, Style, Watermark } from "./content.types";
 import type { ResourceSource } from "./resource.types";
@@ -37,18 +38,25 @@ export interface PatternDefinition {
 	colored?: boolean;
 }
 
+export type DynamicPageMargins = (
+	currentPage: number,
+	pageCount: number,
+	pageSize: ResolvedPageSize,
+) => Margin;
+
 export interface DocumentDefinition {
 	content: Content;
 	styles?: Dictionary<Style>;
 	defaultStyle?: Style;
 	pageSize?: PageSizeName | PageSize;
 	pageOrientation?: PageOrientation;
-	pageMargins?: Margin;
+	pageMargins?: Margin | DynamicPageMargins;
 	header?: DynamicContent;
 	footer?: DynamicContent;
 	background?: DynamicContent;
 	watermark?: Watermark;
 	images?: Dictionary<ResourceSource>;
+	svgs?: Dictionary<ResourceSource>;
 	attachments?: Dictionary<ResourceSource | AttachmentDefinition>;
 	files?: Dictionary<AttachmentDefinition>;
 	patterns?: Dictionary<PatternDefinition>;

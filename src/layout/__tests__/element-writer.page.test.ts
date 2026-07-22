@@ -428,6 +428,24 @@ describe("PageElementWriter", function () {
 			assert.equal(ctx.y, MARGINS.top + 75);
 			assert.equal(ctx.availableHeight, AVAILABLE_HEIGHT - 75);
 		});
+
+		it("commits oversized unbreakable blocks across every generated page", function () {
+			pew.addLine(buildLine(100));
+			pew.beginUnbreakableBlock();
+			addOneTenthLines(25);
+
+			pew.commitUnbreakableBlock();
+
+			assert.equal(ctx.pages.length, 4);
+			assert.equal(ctx.pages[0].items.length, 1);
+			assert.equal(ctx.pages[1].items.length, 10);
+			assert.equal(ctx.pages[2].items.length, 10);
+			assert.equal(ctx.pages[3].items.length, 5);
+			assert.equal(itemAt(1, 0).y, MARGINS.top);
+			assert.equal(itemAt(2, 0).y, MARGINS.top);
+			assert.equal(itemAt(3, 0).y, MARGINS.top);
+			assert.equal(ctx.y, MARGINS.top + AVAILABLE_HEIGHT / 2);
+		});
 	});
 
 	describe("currentBlockToRepeatable", function () {

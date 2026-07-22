@@ -19,6 +19,7 @@ class Renderer {
 	private readonly graphics: RendererGraphics;
 	private readonly progressCallback: ((progress: number) => void) | undefined;
 	private readonly outlineMap: Record<string, PDFKit.PDFOutline> = {};
+	private formInitialized = false;
 
 	constructor(pdfDocument: PDFDocument, progressCallback?: (progress: number) => void) {
 		this.pdfDocument = pdfDocument;
@@ -58,6 +59,9 @@ class Renderer {
 						break;
 					case "attachment":
 						this.graphics.renderAttachment(item.item);
+						break;
+					case "acroform":
+						this.renderAcroForm(item.item, item.item.x ?? 0, item.item.y ?? 0);
 						break;
 					case "beginClip":
 						this.graphics.beginClip(item.item as ClipRectangle);
@@ -142,6 +146,11 @@ class Renderer {
 			const shiftToBaseline =
 				lineHeight - (inline.font.ascender / 1000) * inline.fontSize - descent;
 
+			if (inline.acroform) {
+				this.renderAcroForm(inline, x + inline.x, y + Math.max(0, lineHeight - inline.height));
+				continue;
+			}
+
 			if (inline._pageNodeRef) {
 				preparePageNodeRefLine(inline._pageNodeRef, inline);
 			}
@@ -164,8 +173,15 @@ class Renderer {
 			this.pdfDocument._font = inline.font as EmbeddedFont;
 			this.pdfDocument.fontSize(inline.fontSize);
 
-			const shiftedY = offsetText(y + shiftToBaseline, inline);
-			this.pdfDocument.text(inline.text, x + inline.x, shiftedY, options);
+			const shiftedY = inline.image !== undefined ? y : offsetText(y + shiftToBaseline, inline);
+			if (inline.image !== undefined) {
+				this.pdfDocument.image(inline.image as PDFKit.Mixins.ImageSrc, x + inline.x, shiftedY, {
+					width: inline._imageWidth ?? inline.width,
+					height: inline._imageHeight ?? inline.height,
+				});
+			} else {
+				this.pdfDocument.text(inline.text, x + inline.x, shiftedY, options);
+			}
 
 			if (inline.linkToPage) {
 				const action = this.pdfDocument.ref({
@@ -182,6 +198,41 @@ class Renderer {
 		}
 
 		textDecorator.drawDecorations(line, x, y);
+	}
+
+	private renderAcroForm(node: LayoutPdfNode | Inline, x: number, y: number): void {
+		const form = node.acroform;
+		if (!form) throw new Error("Cannot render an AcroForm node without a field definition");
+		const font = "_formFont" in node ? (node._formFont ?? node.font) : node.font;
+		if (!font) throw new Error(`AcroForm field '${form.id}' has no resolved font`);
+		this.pdfDocument._font = font as EmbeddedFont;
+		if (!this.formInitialized) {
+			this.pdfDocument.initForm();
+			this.formInitialized = true;
+		}
+
+		const width = "_width" in node && node._width !== undefined ? node._width : node.width;
+		const height = "_height" in node && node._height !== undefined ? node._height : node.height;
+		const resolvedWidth = typeof width === "number" ? width : 25;
+		const resolvedHeight = typeof height === "number" ? height : 15;
+		const options = { ...(form.options ?? {}) };
+		switch (form.type) {
+			case "text":
+				this.pdfDocument.formText(form.id, x, y, resolvedWidth, resolvedHeight, options);
+				break;
+			case "button":
+				this.pdfDocument.formPushButton(form.id, x, y, resolvedWidth, resolvedHeight, options);
+				break;
+			case "list":
+				this.pdfDocument.formList(form.id, x, y, resolvedWidth, resolvedHeight, options);
+				break;
+			case "combo":
+				this.pdfDocument.formCombo(form.id, x, y, resolvedWidth, resolvedHeight, options);
+				break;
+			case "checkbox":
+				this.pdfDocument.formCheckbox(form.id, x, y, resolvedWidth, resolvedHeight, options);
+				break;
+		}
 	}
 }
 

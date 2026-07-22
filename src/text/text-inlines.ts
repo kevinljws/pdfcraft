@@ -1,7 +1,7 @@
 import TextBreaker from "./text-breaker";
 import StyleContextStack from "../layout/style-context-stack";
 import { isObject } from "../utils/variable-type";
-import type { Inline } from "../types/internal";
+import type { Inline, MeasuredPdfNode } from "../types/internal";
 import type {
 	BrokenInline,
 	InlineMeasurement,
@@ -59,12 +59,17 @@ const flattenTextArray = (input: TextFragment | TextFragment[]): TextFragment[] 
  */
 class TextInlines {
 	declare pdfDocument: TextFontProvider | null;
+	private readonly measureInlineImage?: (node: MeasuredPdfNode) => MeasuredPdfNode;
 
 	/**
 	 * @param pdfDocument object is instance of PDFDocument
 	 */
-	constructor(pdfDocument: TextFontProvider | null) {
+	constructor(
+		pdfDocument: TextFontProvider | null,
+		measureInlineImage?: (node: MeasuredPdfNode) => MeasuredPdfNode,
+	) {
 		this.pdfDocument = pdfDocument;
+		this.measureInlineImage = measureInlineImage;
 	}
 
 	/**
@@ -148,11 +153,15 @@ class TextInlines {
 		const measured: Inline[] = [];
 		array.forEach((item) => {
 			const textStyle = this.resolveTextStyle(item, styleContextStack);
+			const isMediaInline = item.image !== undefined || item.acroform !== undefined;
+			const requestedImageWidth = isMediaInline && typeof item.width === "number" ? item.width : 0;
+			const requestedImageHeight =
+				isMediaInline && typeof item.height === "number" ? item.height : 0;
 			const inline: Inline = Object.assign(item, {
 				font: pdfDocument.provideFont(textStyle.fontName, textStyle.bold, textStyle.italics),
 				fontSize: textStyle.fontSize,
-				width: 0,
-				height: 0,
+				width: requestedImageWidth,
+				height: requestedImageHeight,
 				x: 0,
 				leadingCut: typeof item.leadingCut === "number" ? item.leadingCut : 0,
 				trailingCut: 0,
@@ -210,7 +219,9 @@ class TextInlines {
 				"linkToDestination",
 				null,
 			);
-			inline.noWrap = StyleContextStack.getStyleProperty(item, styleContextStack, "noWrap", null);
+			inline.noWrap = inline.acroform
+				? true
+				: StyleContextStack.getStyleProperty(item, styleContextStack, "noWrap", null);
 			inline.opacity = StyleContextStack.getStyleProperty(item, styleContextStack, "opacity", 1);
 			inline.sup = StyleContextStack.getStyleProperty(item, styleContextStack, "sup", false);
 			inline.sub = StyleContextStack.getStyleProperty(item, styleContextStack, "sub", false);
@@ -220,8 +231,21 @@ class TextInlines {
 				inline.fontSize *= 0.58;
 			}
 
-			inline.width = this.widthOfText(inline.text, inline);
-			inline.height = inline.font.lineHeight(inline.fontSize) * textStyle.lineHeight;
+			if (inline.image !== undefined) {
+				if (!this.measureInlineImage) {
+					throw new Error("Inline image measurement is unavailable");
+				}
+				const measuredImage = this.measureInlineImage(inline as unknown as MeasuredPdfNode);
+				inline.image = measuredImage.image as string;
+				inline.width = inline._imageWidth = measuredImage._width ?? 0;
+				inline.height = inline._imageHeight = measuredImage._height ?? 0;
+			} else if (inline.acroform !== undefined) {
+				inline.width = typeof item.width === "number" ? item.width : 25;
+				inline.height = typeof item.height === "number" ? item.height : 15;
+			} else {
+				inline.width = this.widthOfText(inline.text, inline);
+				inline.height = inline.font.lineHeight(inline.fontSize) * textStyle.lineHeight;
+			}
 			inline.x = 0;
 
 			if (!inline.leadingCut) {
@@ -235,7 +259,7 @@ class TextInlines {
 				false,
 			);
 			if (!preserveLeadingSpaces) {
-				let leadingSpaces = inline.text.match(LEADING);
+				let leadingSpaces = !isMediaInline ? inline.text.match(LEADING) : null;
 				if (leadingSpaces) {
 					inline.leadingCut += this.widthOfText(leadingSpaces[0], inline);
 				}
@@ -250,7 +274,7 @@ class TextInlines {
 				false,
 			);
 			if (!preserveTrailingSpaces) {
-				let trailingSpaces = inline.text.match(TRAILING);
+				let trailingSpaces = !isMediaInline ? inline.text.match(TRAILING) : null;
 				if (trailingSpaces) {
 					inline.trailingCut = this.widthOfText(trailingSpaces[0], inline);
 				}

@@ -7,7 +7,7 @@ import type {
 	VirtualFileSystem,
 } from "./index";
 import type { LayoutPdfNode, Metadata } from "./document.types";
-import type { PageMargins, PageSize, Point } from "./layout.types";
+import type { PageMargins, PageSize, Point, Position } from "./layout.types";
 import type { LineLike } from "./text.types";
 
 export interface Vector {
@@ -38,12 +38,14 @@ export interface Vector {
 	lineJoin?: string;
 	resetXY?: () => void;
 	_isFillColorFromUnbreakable?: boolean;
+	_node?: LayoutPdfNode;
+	_position?: Position;
 }
 
 export type PageItem =
 	| { type: "vector"; item: Vector }
 	| { type: "line"; item: LineLike }
-	| { type: "image" | "svg" | "attachment"; item: LayoutPdfNode }
+	| { type: "image" | "svg" | "attachment" | "acroform"; item: LayoutPdfNode }
 	| {
 			type: "beginClip" | "beginVerticalAlignment" | "endVerticalAlignment";
 			item: PageControlItem;

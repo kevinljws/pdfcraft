@@ -25,6 +25,14 @@ export interface PageMargins {
 export type PageMarginDefinition =
 	number | [number, number] | [number, number, number, number] | PageMargins;
 
+export type DynamicPageMargins = (
+	currentPage: number,
+	pageCount: number,
+	pageSize: PageSize,
+) => PageMarginDefinition;
+
+export type PageMarginSource = PageMarginDefinition | DynamicPageMargins;
+
 export interface Position {
 	pageNumber?: number;
 }

@@ -2302,6 +2302,59 @@ describe("LayoutBuilder", function () {
 			assert.deepEqual(pageBreakBeforeFunction.mock.calls[2][0].pageNumbers, [1, 2]);
 			assert.deepEqual(pageBreakBeforeFunction.mock.calls[3][0].pageNumbers, [2]);
 		});
+
+		it("updates child positions when an unbreakable block moves to the next page", function () {
+			docStructure = [
+				{ text: `Filler${new Array(57).join("\n")}`, id: "filler" },
+				{ text: "Heading", id: "heading", headlineLevel: 1 },
+				{
+					stack: ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5"],
+					unbreakable: true,
+					id: "unbreakable-block",
+				},
+			];
+			pageBreakBeforeFunction = vi.fn();
+
+			builder.layoutDocument(
+				docStructure,
+				pdfDocument,
+				styleDictionary,
+				defaultStyle,
+				background,
+				header,
+				footer,
+				watermark,
+				pageBreakBeforeFunction,
+			);
+
+			const headingCall = pageBreakBeforeFunction.mock.calls.find(
+				(call) => call[0].id === "heading",
+			);
+			assert(headingCall);
+			assert.deepEqual(headingCall[1].getFollowingNodesOnPage(), []);
+		});
+
+		it("excludes repeatable header and footer nodes from pageBreakBefore", function () {
+			docStructure = [{ text: "Body", id: "body" }];
+			pageBreakBeforeFunction = vi.fn();
+
+			builder.layoutDocument(
+				docStructure,
+				pdfDocument,
+				styleDictionary,
+				defaultStyle,
+				background,
+				{ text: "Header", id: "header" },
+				{ text: "Footer", id: "footer" },
+				watermark,
+				pageBreakBeforeFunction,
+			);
+
+			const ids = pageBreakBeforeFunction.mock.calls.map((call) => call[0].id);
+			assert.include(ids, "body");
+			assert.notInclude(ids, "header");
+			assert.notInclude(ids, "footer");
+		});
 	});
 
 	describe("table of content", function () {

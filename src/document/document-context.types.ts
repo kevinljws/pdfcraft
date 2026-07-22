@@ -1,5 +1,5 @@
 import type { PageOrientation } from "../types";
-import type { Metadata, PageMargins, PageSize, PdfPage } from "../types/internal";
+import type { Metadata, PageMargins, PageMarginSource, PageSize, PdfPage } from "../types/internal";
 
 export interface ContextCoordinates {
 	x: number;
@@ -22,6 +22,9 @@ export interface ContextSnapshot extends ContextCoordinates {
 export interface DocumentContextState extends ContextCoordinates {
 	pages: PdfPage[];
 	pageMargins: PageMargins;
+	pageMarginSource: PageMarginSource;
+	pageCount: number;
+	pageMarginFunctionUsed: boolean;
 	snapshots: ContextSnapshot[];
 	backgroundLength: number[];
 	lastColumnWidth: number;

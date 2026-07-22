@@ -11,6 +11,26 @@ type PreprocessedFixture = PdfNode & {
 describe("DocPreprocessor", function () {
 	const docPreprocessor = new DocPreprocessor();
 
+	describe("AcroForms", function () {
+		it("accepts valid fields and rejects incomplete definitions", function () {
+			assert.doesNotThrow(() =>
+				docPreprocessor.preprocessNode({
+					acroform: { type: "text", id: "customer-name" },
+					width: "*",
+					height: 20,
+				}),
+			);
+			assert.throws(
+				() => docPreprocessor.preprocessNode({ acroform: { type: "text", id: "" } }),
+				/non-empty string/,
+			);
+			assert.throws(
+				() => docPreprocessor.preprocessNode({ acroform: { type: "radio", id: "choice" } }),
+				/unsupported field type/,
+			);
+		});
+	});
+
 	describe("text", function () {
 		it("has been registered text node to normalizer", function () {
 			var ddContent = {

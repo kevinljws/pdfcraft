@@ -17,6 +17,7 @@ interface LayoutBuilderRepeatablesHost {
 	writer: PageElementWriter;
 	docPreprocessor: DocPreprocessor;
 	docMeasure: DocMeasure;
+	suppressLinearNodeList: boolean;
 	processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed?: boolean): void;
 }
 
@@ -39,6 +40,16 @@ class LayoutBuilderRepeatables {
 		this.host.processNode(node, isVerticalAlignmentAllowed);
 	}
 
+	private processRepeatableNode(node: LayoutPdfNode): void {
+		const previous = this.host.suppressLinearNodeList;
+		this.host.suppressLinearNodeList = true;
+		try {
+			this.processNode(node);
+		} finally {
+			this.host.suppressLinearNodeList = previous;
+		}
+	}
+
 	addBackground(background: unknown): void {
 		const getBackground: BackgroundGetter =
 			typeof background === "function" ? (background as BackgroundGetter) : () => background;
@@ -51,7 +62,7 @@ class LayoutBuilderRepeatables {
 		const processed = this.docPreprocessor.preprocessBlock(pageBackground);
 		const measured = this.docMeasure.measureBlock(processed);
 		const layoutNode = measured as LayoutPdfNode;
-		this.processNode(layoutNode);
+		this.processRepeatableNode(layoutNode);
 		this.writer.commitUnbreakableBlock(0, 0);
 		context.backgroundLength[context.page] += layoutNode.positions?.length ?? 0;
 	}
@@ -82,7 +93,7 @@ class LayoutBuilderRepeatables {
 			this.writer.beginUnbreakableBlock(sizes.width, sizes.height);
 			const processed = this.docPreprocessor.preprocessBlock(node);
 			const measured = this.docMeasure.measureBlock(processed);
-			this.processNode(measured as LayoutPdfNode);
+			this.processRepeatableNode(measured as LayoutPdfNode);
 			this.writer.commitUnbreakableBlock(sizes.x, sizes.y);
 		}
 	}

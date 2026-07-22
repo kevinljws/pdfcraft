@@ -21,6 +21,19 @@ var sampleTestProvider = {
 var textInlines = new TextInlines(sampleTestProvider);
 
 describe("TextInlines", function () {
+	it("measures an inline AcroForm as an indivisible fragment", function () {
+		const result = textInlines.buildInlines(
+			["Accept ", { acroform: { type: "checkbox", id: "accept" }, width: 18, height: 16 }],
+			new StyleContextStack(null, { font: "Helvetica", fontSize: 12 }),
+		);
+		const field = result.items.find((inline) => inline.acroform);
+
+		assert.equal(field?.text, "");
+		assert.equal(field?.width, 18);
+		assert.equal(field?.height, 16);
+		assert.equal(field?.noWrap, true);
+	});
+
 	var plainTextArray = ["Imię: ", "Jan   ", "   Nazwisko:", " Nowak\nDodatkowe informacje:"];
 
 	var plainTextArrayWithoutNewLines = [
@@ -119,6 +132,26 @@ describe("TextInlines", function () {
 		assert.equal(direct.width, inline.width);
 		assert.equal(direct.height, inline.height);
 		assert.equal(direct.fontSize, inline.fontSize);
+	});
+
+	it("measures image fragments as part of a text line", function () {
+		const inlines = new TextInlines(sampleTestProvider, (node) => {
+			node.image = "resolved-icon";
+			node._width = 24;
+			node._height = 16;
+			return node;
+		});
+		const result = inlines.buildInlines([
+			{ text: "before " },
+			{ image: "icon", width: 24, height: 16 },
+			{ text: " after" },
+		]);
+		const image = result.items.find((inline) => inline.image !== undefined)!;
+
+		assert.equal(image.image, "resolved-icon");
+		assert.equal(image.width, 24);
+		assert.equal(image.height, 16);
+		assert(result.maxWidth >= 24);
 	});
 
 	describe("buildInlines", function () {

@@ -2,7 +2,7 @@ import { assert, beforeEach, describe, it } from "vitest";
 import BaseDocPreprocessor from "../../preprocessing/doc-preprocessor.ts";
 import BaseDocMeasure from "../doc-measure.ts";
 import type PDFDocument from "../../rendering/pdf-document.ts";
-import type SVGMeasure from "../svg-measure.ts";
+import SVGMeasure from "../svg-measure.ts";
 import type TextInlines from "../../text/text-inlines.ts";
 import type { Dictionary, Style } from "../../types/index.ts";
 import type {
@@ -121,6 +121,10 @@ class DocMeasure extends BaseDocMeasure {
 
 	convertIfInlineImage(node: MeasuredPdfNode): void {
 		this.media.convertIfInlineImage(node);
+	}
+
+	measureSVG(node: MeasuredPdfNode): MeasuredFixture {
+		return measured(this.media.measureSVG(node));
 	}
 }
 
@@ -389,6 +393,28 @@ describe("DocMeasure", function () {
 			assert(result.table.widths[0].width);
 		});
 
+		it("inherits table-cell borders and fills from named styles", function () {
+			const styledMeasure = new DocMeasure(sampleTestProvider, {
+				cell: {
+					border: [true, false, true, false],
+					borderColor: ["red", "green", "blue", "black"],
+					fillColor: "yellow",
+					fillOpacity: 0.5,
+				},
+			});
+			const node = {
+				table: { body: [[{ text: "Styled", style: "cell" }]] },
+			};
+
+			docPreprocessor.preprocessTable(node);
+			const cell = styledMeasure.measureTable(node).table.body[0][0];
+
+			assert.deepEqual(cell.border, [true, false, true, false]);
+			assert.deepEqual(cell.borderColor, ["red", "green", "blue", "black"]);
+			assert.equal(cell.fillColor, "yellow");
+			assert.equal(cell.fillOpacity, 0.5);
+		});
+
 		it("should not spoil widths if measureTable has been called before", function () {
 			docPreprocessor.preprocessTable(tableNode);
 			var result = docMeasure.measureTable(tableNode);
@@ -610,6 +636,23 @@ describe("DocMeasure", function () {
 	});
 
 	describe("measureImage", function () {
+		it("measures registered images embedded in text", function () {
+			const measure = new DocMeasure({
+				...sampleTestProvider,
+				images: {},
+				provideImage: () => ({ width: 40, height: 20, orientation: 0 }),
+			});
+			const node = { text: ["before ", { image: "logo", width: 20 }, " after"] };
+			docPreprocessor.preprocessDocument(node);
+
+			const result = measure.measureDocument(node);
+			const image = result._inlines!.find((inline) => inline.image !== undefined)!;
+
+			assert.equal(image.image, "logo");
+			assert.equal(image.width, 20);
+			assert.equal(image.height, 10);
+		});
+
 		it("registers Uint8Array images as inline image resources", function () {
 			const images: Record<string, string | Uint8Array | ArrayBuffer> = {};
 			const measure = new DocMeasure({ images });
@@ -645,6 +688,41 @@ describe("DocMeasure", function () {
 		});
 
 		it("should support dataUri images", function () {});
+	});
+
+	describe("measureSVG", function () {
+		it("decodes SVG data URLs", function () {
+			const measure = new DocMeasure({ svgs: {}, virtualfs: null }, {}, {}, new SVGMeasure());
+			const node = {
+				svg: "data:image/svg+xml,%3Csvg%20width%3D%2210%22%20height%3D%2220%22%3E%3C%2Fsvg%3E",
+			} as MeasuredPdfNode;
+
+			const result = measure.measureSVG(node);
+
+			assert.equal(result._width, 10);
+			assert.equal(result._height, 20);
+			assert.match(result.svg as string, /^<svg/);
+		});
+
+		it("loads named SVG resources from the virtual file system", function () {
+			const measure = new DocMeasure(
+				{
+					svgs: { logo: "resolved-logo.svg" },
+					virtualfs: {
+						existsSync: (name: string) => name === "resolved-logo.svg",
+						readFileSync: () => '<svg width="30" height="40"></svg>',
+					},
+				},
+				{},
+				{},
+				new SVGMeasure(),
+			);
+
+			const result = measure.measureSVG({ svg: "logo" } as MeasuredPdfNode);
+
+			assert.equal(result._width, 30);
+			assert.equal(result._height, 40);
+		});
 	});
 
 	describe("measureDocument", function () {

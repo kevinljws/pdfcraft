@@ -80,7 +80,7 @@ class LayoutBuilderContent {
 	// tables
 	processLeaf(node: LayoutPdfNode): void {
 		let line = this.buildNextLine(node);
-		if (line && (node.tocItem || node.id)) {
+		if (line) {
 			line._node = node;
 		}
 		let currentHeight = line ? line.getHeight() : 0;
@@ -137,6 +137,7 @@ class LayoutBuilderContent {
 		}
 
 		while (line && (maxHeight === -1 || currentHeight < maxHeight)) {
+			line._node = node;
 			// Check if line fits vertically in current context
 			if (
 				line.getHeight() > this.writer.context().availableHeight &&
@@ -167,6 +168,7 @@ class LayoutBuilderContent {
 
 			let positions = this.writer.addLine(line);
 			if (positions) {
+				line._position = positions;
 				node.positions!.push(positions);
 			}
 			line = this.buildNextLine(node);
@@ -239,27 +241,58 @@ class LayoutBuilderContent {
 	// images
 	processImage(node: LayoutPdfNode): void {
 		let position = this.writer.addImage(node);
-		if (position) node.positions!.push(position);
+		if (position) {
+			node._position = position;
+			node.positions!.push(position);
+		}
+		node._node = node;
 	}
 
 	processCanvas(node: LayoutPdfNode): void {
 		let positions = this.writer.addCanvas(node);
-		if (positions) addAll(node.positions!, positions);
+		if (positions) {
+			addAll(node.positions!, positions);
+			for (let index = 0; index < (node.canvas?.length ?? 0); index++) {
+				node.canvas![index]._position = positions[index];
+			}
+		}
+		for (const vector of node.canvas ?? []) vector._node = node;
 	}
 
 	processSVG(node: LayoutPdfNode): void {
 		let position = this.writer.addSVG(node);
-		if (position) node.positions!.push(position);
+		if (position) {
+			node._position = position;
+			node.positions!.push(position);
+		}
+		node._node = node;
 	}
 
 	processQr(node: LayoutPdfNode): void {
 		let position = this.writer.addQr(node);
-		if (position) node.positions!.push(position);
+		if (position) {
+			node.positions!.push(position);
+			for (const vector of node._canvas ?? []) vector._position = position;
+		}
+		for (const vector of node._canvas ?? []) vector._node = node;
 	}
 
 	processAttachment(node: LayoutPdfNode): void {
 		let position = this.writer.addAttachment(node);
-		if (position) node.positions!.push(position);
+		if (position) {
+			node._position = position;
+			node.positions!.push(position);
+		}
+		node._node = node;
+	}
+
+	processAcroForm(node: LayoutPdfNode): void {
+		const position = this.writer.addAcroForm(node);
+		if (position) {
+			node._position = position;
+			node.positions!.push(position);
+		}
+		node._node = node;
 	}
 }
 

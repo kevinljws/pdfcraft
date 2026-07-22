@@ -21,6 +21,7 @@ import {
 	embedFiles,
 	getResolvedAttachments,
 	getResolvedImages,
+	getResolvedSvgs,
 } from "./printer.helpers";
 import { resolvePrinterUrls } from "./printer.resources";
 
@@ -71,6 +72,7 @@ class PdfPrinter {
 		docDefinition.compress =
 			typeof docDefinition.compress === "boolean" ? docDefinition.compress : true;
 		docDefinition.images = docDefinition.images || {};
+		docDefinition.svgs = docDefinition.svgs || {};
 		docDefinition.attachments = docDefinition.attachments || {};
 		docDefinition.pageMargins = isValue(docDefinition.pageMargins) ? docDefinition.pageMargins : 40;
 		docDefinition.patterns = docDefinition.patterns || {};
@@ -112,14 +114,15 @@ class PdfPrinter {
 			pdfOptions,
 			this.virtualfs,
 			this.localAccessPolicy,
+			getResolvedSvgs(docDefinition.svgs),
 		);
 		embedFiles(docDefinition, this.pdfKitDoc);
 
-		const builder = new LayoutBuilder(
-			pageSize,
-			normalizePageMargin(docDefinition.pageMargins),
-			new SVGMeasure(),
-		);
+		const pageMargins =
+			typeof docDefinition.pageMargins === "function"
+				? docDefinition.pageMargins
+				: normalizePageMargin(docDefinition.pageMargins);
+		const builder = new LayoutBuilder(pageSize, pageMargins, new SVGMeasure());
 
 		builder.registerTableLayouts(tableLayouts);
 		if (options.tableLayouts) {

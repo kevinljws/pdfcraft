@@ -11,7 +11,7 @@ import type {
 	Style,
 } from "../../src/types/index.ts";
 import type { AttachmentDefinition } from "../../src/rendering/renderer.types.ts";
-import type { Inline } from "../../src/types/internal.ts";
+import type { Inline, PageMarginSource, PageMargins } from "../../src/types/internal.ts";
 
 interface IntegrationDocumentDefinition extends Record<string, unknown> {
 	content: unknown;
@@ -20,6 +20,7 @@ interface IntegrationDocumentDefinition extends Record<string, unknown> {
 	attachments?: Dictionary<AttachmentDefinition>;
 	styles?: Dictionary<Style>;
 	defaultStyle?: Style;
+	pageMargins?: PageMarginSource | number[];
 }
 
 export interface IntegrationRenderedItem extends Record<string, unknown> {
@@ -44,6 +45,7 @@ export interface IntegrationRenderedItem extends Record<string, unknown> {
 export interface IntegrationPage {
 	items: Array<{ type: string; item: IntegrationRenderedItem }>;
 	pageSize: { width: number; height: number };
+	pageMargins: PageMargins;
 }
 
 interface InlineTextOptions {
@@ -94,7 +96,7 @@ class IntegrationTestHelper {
 		);
 		var builder = new LayoutBuilder(
 			pageSize,
-			{
+			(docDefinition.pageMargins as PageMarginSource | undefined) ?? {
 				left: this.MARGINS.left,
 				right: this.MARGINS.right,
 				top: this.MARGINS.top,

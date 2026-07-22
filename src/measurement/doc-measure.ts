@@ -37,14 +37,14 @@ class DocMeasure {
 		tableLayouts: Dictionary<Partial<TableLayout<MeasuredPdfNode>>> = {},
 	) {
 		this.pdfDocument = pdfDocument;
-		this.textInlines = new TextInlines(pdfDocument);
 		this.styleStack = new StyleContextStack(styleDictionary, defaultStyle);
 		this.svgMeasure = svgMeasure;
 		this.tableLayouts = tableLayouts;
+		this.media = new DocMeasureMedia(this.pdfDocument, this.styleStack, this.svgMeasure);
+		this.textInlines = new TextInlines(pdfDocument, (node) => this.media.measureImage(node));
 		this.containers = new DocMeasureContainers(this.textInlines, this.styleStack, (node) =>
 			this.measureNode(node),
 		);
-		this.media = new DocMeasureMedia(this.pdfDocument, this.styleStack, this.svgMeasure);
 	}
 
 	/**
@@ -95,6 +95,8 @@ class DocMeasure {
 				return extendMargins(this.measureQr(measuredNode));
 			} else if (measuredNode.attachment) {
 				return extendMargins(this.measureAttachment(measuredNode));
+			} else if (measuredNode.acroform) {
+				return extendMargins(this.measureAcroForm(measuredNode));
 			} else {
 				throw new Error(`Unrecognized document structure: ${stringifyNode(measuredNode)}`);
 			}
@@ -110,6 +112,24 @@ class DocMeasure {
 
 			return node;
 		}
+	}
+
+	measureAcroForm(node: MeasuredPdfNode): MeasuredPdfNode {
+		const width = typeof node.width === "number" ? node.width : 10;
+		const height = typeof node.height === "number" ? node.height : 15;
+		node._minWidth = width;
+		node._maxWidth = width;
+		node._minHeight = height;
+		node._maxHeight = height;
+		const font = this.styleStack.getProperty("font");
+		const bold = this.styleStack.getProperty("bold");
+		const italics = this.styleStack.getProperty("italics");
+		node._formFont = this.pdfDocument.provideFont(
+			typeof font === "string" ? font : "Roboto",
+			bold === true,
+			italics === true,
+		);
+		return node;
 	}
 
 	measureLeaf(node: MeasuredPdfNode): MeasuredPdfNode {
@@ -265,6 +285,10 @@ class DocMeasure {
 		function measureCb(_this: DocMeasure, data: MeasuredPdfNode): () => MeasuredPdfNode {
 			return () => {
 				if (isObject(data)) {
+					data.border = _this.styleStack.getProperty("border") as
+						[boolean, boolean, boolean, boolean] | undefined;
+					data.borderColor = _this.styleStack.getProperty("borderColor") as
+						[Color, Color, Color, Color] | undefined;
 					data.fillColor = _this.styleStack.getProperty("fillColor") as Color | undefined;
 					const fillOpacity = _this.styleStack.getProperty("fillOpacity");
 					data.fillOpacity = typeof fillOpacity === "number" ? fillOpacity : undefined;

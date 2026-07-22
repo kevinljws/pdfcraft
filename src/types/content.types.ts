@@ -35,6 +35,10 @@ export interface Style {
 	fontFeatures?: string[];
 	opacity?: number;
 	markerColor?: Color;
+	border?: [boolean, boolean, boolean, boolean];
+	borderColor?: [Color, Color, Color, Color];
+	fillColor?: Color;
+	fillOpacity?: number;
 	margin?: Margin;
 	marginLeft?: number;
 	marginTop?: number;
@@ -72,11 +76,59 @@ export interface ContentBase extends Style {
 }
 
 export type Text =
-	string | number | boolean | TextNode | Array<string | number | boolean | TextNode>;
+	| string
+	| number
+	| boolean
+	| TextNode
+	| InlineImageNode
+	| AcroFormNode
+	| Array<string | number | boolean | TextNode | InlineImageNode | AcroFormNode>;
 
 export interface TextNode extends ContentBase {
 	text: Text;
 	maxHeight?: number;
+}
+
+export interface InlineImageNode extends ContentBase {
+	image: string | Uint8Array;
+	width?: number;
+	height?: number;
+	fit?: [number, number];
+	minWidth?: number;
+	maxWidth?: number;
+	minHeight?: number;
+	maxHeight?: number;
+	opacity?: number;
+}
+
+export type AcroFormType = "text" | "button" | "list" | "combo" | "checkbox";
+
+export interface AcroFormOptions extends Record<string, unknown> {
+	value?: string;
+	defaultValue?: string;
+	select?: string[];
+	align?: "left" | "center" | "right";
+	multiline?: boolean;
+	password?: boolean;
+	readOnly?: boolean;
+	required?: boolean;
+	selected?: boolean;
+	backgroundColor?: Color;
+	borderColor?: Color;
+	fontSize?: number;
+	format?: Record<string, unknown> & { type: string };
+}
+
+export interface AcroFormDefinition {
+	type: AcroFormType;
+	id: string;
+	options?: AcroFormOptions;
+}
+
+export interface AcroFormNode extends ContentBase {
+	acroform: AcroFormDefinition;
+	width?: number | "*";
+	height?: number;
 }
 
 export interface StackNode extends ContentBase {
@@ -280,6 +332,7 @@ export type ContentNode =
 	| QrNode
 	| CanvasNode
 	| AttachmentNode
+	| AcroFormNode
 	| TocNode
 	| SectionNode;
 

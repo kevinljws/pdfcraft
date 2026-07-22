@@ -57,6 +57,12 @@ export async function resolvePrinterUrls(
 		}
 	}
 
+	if (docDefinition.svgs) {
+		for (const [name, resource] of Object.entries(docDefinition.svgs)) {
+			docDefinition.svgs[name] = resolve(resource);
+		}
+	}
+
 	if (docDefinition.attachments) {
 		for (const [name, attachment] of Object.entries(docDefinition.attachments)) {
 			if (isResourceReference(attachment)) {

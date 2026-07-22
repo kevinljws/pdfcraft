@@ -451,4 +451,50 @@ describe("Integration test: tables", function () {
 			"max gap between horizontal lines was " + maxGap + "pt, expected < 90pt",
 		);
 	});
+
+	it("keeps repeated rowSpan header vertical alignment stable (#2925)", function () {
+		const rows = [
+			["D-001", "500", "480", "-20", "In Progress"],
+			["D-002", "300", "350", "+50", "Exceeded"],
+			["D-003", "750", "750", "0", "Achieved"],
+			["D-004", "200", "180", "-20", "Under Review"],
+			["D-005", "400", "410", "+10", "Achieved"],
+		];
+		const createReportTable = () => ({
+			margin: [0, 5, 0, 15],
+			table: {
+				headerRows: 2,
+				widths: ["auto", "*", "*", "*", "auto"],
+				body: [
+					[
+						{ text: "Dept ID", rowSpan: 2, verticalAlignment: "middle" },
+						{ text: "Performance Indicators", colSpan: 3 },
+						{},
+						{},
+						{ text: "Status", rowSpan: 2 },
+					],
+					[{}, "Target", "Actual", "Gap", {}],
+					...rows,
+					...rows,
+					...rows,
+				],
+			},
+		});
+		const content: unknown[] = [];
+		for (let page = 1; page <= 3; page++) {
+			content.push({ text: `Statistical Report - Page ${page}` }, createReportTable());
+			if (page < 3) content.push({ text: "", pageBreak: "after" });
+		}
+
+		const pages = testHelper.renderPages("A4", { content });
+		const viewHeights = pages.map((page) => {
+			const marker = page.items.find((item) => item.type === "beginVerticalAlignment");
+			assert(marker);
+			return (marker.item as IntegrationRenderedItem & { getViewHeight(): number }).getViewHeight();
+		});
+
+		assert.equal(pages.length, 3);
+		assert.deepEqual(viewHeights, [viewHeights[0], viewHeights[0], viewHeights[0]]);
+		assert.ok(viewHeights[0] > 0);
+	});
 });

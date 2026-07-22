@@ -294,7 +294,7 @@ class LayoutBuilderRows {
 								(endingCell._startingRowSpanY ?? 0) + (endingCell._rowTopPageYPadding ?? 0);
 							return (endingCell._rowTopPageY ?? 0) - rowTopPageY + (endingCell._bottomY ?? 0);
 						} else {
-							if (cell.positions![0].pageNumber !== endingCell._lastPageNumber) {
+							if (cell._lastPageNumber !== endingCell._lastPageNumber) {
 								return (this.bottomY ?? 0) - (endingCell._bottomY ?? 0);
 							}
 

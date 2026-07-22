@@ -126,6 +126,16 @@ class TextBreaker {
 		for (let i = 0, l = texts.length; i < l; i++) {
 			let item = texts[i];
 			const styleItem = isObject(item) ? (item as PdfNode) : {};
+			if (styleItem.image) {
+				results.push({ ...styleItem, text: "" });
+				lastWord = null;
+				continue;
+			}
+			if (styleItem.acroform) {
+				results.push({ ...styleItem, text: "" });
+				lastWord = null;
+				continue;
+			}
 			let style: Record<string, unknown> | null = null;
 			let words: BrokenWord[];
 			let breakAll =

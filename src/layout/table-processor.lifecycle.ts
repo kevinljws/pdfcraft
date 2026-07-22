@@ -29,6 +29,7 @@ export interface TableLifecycleState {
 	_tableTopBorderY?: number;
 	rowTopPageY: number;
 	rowTopY: number;
+	rowXOffset: number;
 	reservedAtBottom: number;
 	drawHorizontalLine(lineIndex: number, writer: PageElementWriter): void;
 }
@@ -86,6 +87,11 @@ export function beginTableRow(
 	processor.rowPaddingTop = processor.layout.paddingTop(rowIndex, processor.tableNode);
 	processor.bottomLineWidth = processor.layout.hLineWidth(rowIndex + 1, processor.tableNode);
 	processor.rowPaddingBottom = processor.layout.paddingBottom(rowIndex, processor.tableNode);
+	const context = writer.context();
+	const currentPage =
+		typeof context.getCurrentPage === "function" ? context.getCurrentPage() : undefined;
+	processor.rowXOffset =
+		context.x - (currentPage?.pageMargins.left ?? context.pageMargins?.left ?? 0);
 
 	processor.rowCallback = () => {
 		const offset = processor.rowPaddingTop + (!processor.headerRows ? processor.topLineWidth : 0);

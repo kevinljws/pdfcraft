@@ -11,6 +11,8 @@ export interface BrokenWord {
 
 export interface BrokenInline extends Record<string, unknown> {
 	text: string;
+	image?: PdfNode["image"];
+	acroform?: PdfNode["acroform"];
 	lineEnd?: boolean;
 	noNewLine?: boolean;
 }

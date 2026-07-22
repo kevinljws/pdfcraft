@@ -1,6 +1,11 @@
-import type { Color, Decoration } from "./index";
-import type { LayoutPdfNode, MeasuredPdfNode, NodeReference } from "./document.types";
-import type { OutlineDefinition } from "./layout.types";
+import type { AcroFormDefinition, Color, Decoration } from "./index";
+import type {
+	LayoutPdfNode,
+	MeasuredPdfNode,
+	NodeReference,
+	SerializedBuffer,
+} from "./document.types";
+import type { OutlineDefinition, Position } from "./layout.types";
 import type { Vector } from "./rendering.types";
 
 export interface TextMeasurement {
@@ -30,6 +35,10 @@ export interface PdfFont {
 
 export interface Inline {
 	text: string;
+	image?: string | Uint8Array | SerializedBuffer;
+	acroform?: AcroFormDefinition;
+	_imageWidth?: number;
+	_imageHeight?: number;
 	width: number;
 	height: number;
 	x: number;
@@ -56,6 +65,7 @@ export interface Inline {
 	sup?: boolean;
 	sub?: boolean;
 	_node?: LayoutPdfNode;
+	_position?: Position;
 	_tocItemRef?: MeasuredPdfNode | LayoutPdfNode;
 	_pageNodeRef?: MeasuredPdfNode | LayoutPdfNode;
 	_pageRef?: NodeReference<MeasuredPdfNode | LayoutPdfNode>;

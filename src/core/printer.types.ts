@@ -16,6 +16,7 @@ import type {
 	DocumentPermissions,
 } from "../types";
 import type { PageMarginDefinition } from "../types/internal";
+import type { DynamicPageMargins } from "../types/internal";
 
 export type PrinterResourceReference = string | ResourceReference;
 
@@ -32,11 +33,12 @@ export interface PrinterDocumentDefinition {
 	tagged?: boolean;
 	displayTitle?: boolean;
 	images?: Dictionary<PrinterResourceReference>;
+	svgs?: Dictionary<PrinterResourceReference>;
 	attachments?: Dictionary<PrinterResourceReference | AttachmentDefinition>;
 	files?: Dictionary<AttachmentDefinition>;
 	patterns?: Dictionary<PatternDefinition>;
 	pageSize?: PageSizeName | PageSize;
-	pageMargins?: PageMarginDefinition | Margin;
+	pageMargins?: PageMarginDefinition | Margin | DynamicPageMargins;
 	pageOrientation?: PageOrientation;
 	styles?: Dictionary<Style>;
 	defaultStyle?: Style;

@@ -17,6 +17,17 @@ export function getResolvedImages(images: PrinterDocumentDefinition["images"]): 
 	return result;
 }
 
+export function getResolvedSvgs(svgs: PrinterDocumentDefinition["svgs"]): Dictionary<string> {
+	const result: Dictionary<string> = {};
+	for (const [name, svg] of Object.entries(svgs ?? {})) {
+		if (typeof svg !== "string") {
+			throw new Error(`SVG '${name}' contains an unresolved URL`);
+		}
+		result[name] = svg;
+	}
+	return result;
+}
+
 export function getResolvedAttachments(
 	attachments: PrinterDocumentDefinition["attachments"],
 ): Dictionary<ResolvedAttachmentDefinition> {

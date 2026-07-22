@@ -4,6 +4,7 @@ import type SVGMeasure from "./svg-measure";
 import type { Alignment } from "../types";
 import type { Dimensions, MeasuredPdfNode } from "../types/internal";
 import { isNumber } from "../utils/variable-type";
+import { decodeBase64, decodeBytes } from "../utils/bytes";
 
 class DocMeasureMedia {
 	private autoImageIndex = 1;
@@ -106,6 +107,7 @@ class DocMeasureMedia {
 	}
 
 	measureSVG(node: MeasuredPdfNode): MeasuredPdfNode {
+		node.svg = this.resolveSVG(node.svg!);
 		let dimensions = this.svgMeasure.measureSVG(node.svg!);
 
 		if (!isNumber(dimensions.width) && !isNumber(dimensions.height)) {
@@ -140,6 +142,27 @@ class DocMeasureMedia {
 		});
 
 		return node;
+	}
+
+	private resolveSVG(source: string | SVGElement): string | SVGElement {
+		if (typeof source !== "string") return source;
+
+		let resolved: string | Uint8Array | ArrayBuffer = this.pdfDocument.svgs[source] ?? source;
+		if (typeof resolved === "string" && this.pdfDocument.virtualfs?.existsSync(resolved)) {
+			resolved = this.pdfDocument.virtualfs.readFileSync(resolved);
+		}
+
+		if (resolved instanceof ArrayBuffer) resolved = new Uint8Array(resolved);
+		if (resolved instanceof Uint8Array) return decodeBytes(resolved, "utf8");
+
+		const dataUrl = resolved.match(/^data:image\/svg\+xml(?:;charset=[^;,]+)?(;base64)?,(.*)$/is);
+		if (dataUrl) {
+			return dataUrl[1]
+				? decodeBytes(decodeBase64(dataUrl[2]), "utf8")
+				: decodeURIComponent(dataUrl[2]);
+		}
+
+		return resolved;
 	}
 }
 

@@ -25,6 +25,7 @@ class TableProcessor {
 	_tableTopBorderY?: number;
 	rowTopPageY = 0;
 	rowTopY = 0;
+	rowXOffset = 0;
 	reservedAtBottom = 0;
 	headerRepeatable: ReturnType<PageElementWriter["currentBlockToRepeatable"]> | null = null;
 
@@ -104,6 +105,8 @@ class TableProcessor {
 		let endingPage = writer.context().page;
 		let endingY = writer.context().y;
 		let endingAvailableHeight = writer.context().availableHeight;
+		let endingX = writer.context().x;
+		let endingAvailableWidth = writer.context().availableWidth;
 
 		let xs = getLineXs();
 
@@ -155,6 +158,17 @@ class TableProcessor {
 			if (writer.context().page != ys[yi].page) {
 				writer.context().page = ys[yi].page;
 			}
+			const segmentContext = writer.context();
+			const segmentPage =
+				typeof segmentContext.getCurrentPage === "function"
+					? segmentContext.getCurrentPage()
+					: segmentContext.pages?.[segmentContext.page];
+			if (segmentPage) {
+				segmentContext.pageMargins = segmentPage.pageMargins;
+				segmentContext.x = segmentPage.pageMargins.left + this.rowXOffset;
+				segmentContext.availableWidth =
+					segmentPage.pageSize.width - segmentContext.x - segmentPage.pageMargins.right;
+			}
 
 			// Draw horizontal lines before the vertical lines so they are not overridden
 			if (willBreak && this.layout.hLineWhenBroken !== false) {
@@ -175,6 +189,13 @@ class TableProcessor {
 		writer.context().page = endingPage;
 		writer.context().y = endingY;
 		writer.context().availableHeight = endingAvailableHeight;
+		writer.context().x = endingX;
+		writer.context().availableWidth = endingAvailableWidth;
+		const restoredPage =
+			typeof writer.context().getCurrentPage === "function"
+				? writer.context().getCurrentPage()
+				: writer.context().pages?.[writer.context().page];
+		if (restoredPage) writer.context().pageMargins = restoredPage.pageMargins;
 
 		let row = this.table.body[rowIndex];
 		for (let i = 0, l = row.length; i < l; i++) {

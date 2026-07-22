@@ -1,6 +1,6 @@
 import type { PageOrientation } from "../types";
 import type { PageSizeDefinition } from "../configuration/page-size";
-import type { LayoutPdfNode, PageMargins, PdfPage } from "../types/internal";
+import type { LayoutPdfNode, PageMarginSource, PdfPage } from "../types/internal";
 import type { PageMarginDefinition } from "../types/internal";
 import { convertToDynamicContent } from "../utils/tools";
 
@@ -17,7 +17,7 @@ export type SectionNode = Omit<LayoutPdfNode, "background" | "pageOrientation"> 
 
 interface SectionDefaults {
 	pageSize: PageSizeDefinition;
-	pageMargins: PageMargins;
+	pageMargins: PageMarginSource;
 }
 
 export function resolveSectionPage(
@@ -27,7 +27,7 @@ export function resolveSectionPage(
 ): {
 	pageSize: PageSizeDefinition;
 	pageOrientation?: PageOrientation;
-	pageMargins: PageMarginDefinition;
+	pageMargins: PageMarginSource;
 	customProperties: Record<string, unknown>;
 } {
 	const inheritedPageSize = currentPage

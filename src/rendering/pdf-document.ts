@@ -40,6 +40,7 @@ class PDFDocument extends PDFKit {
 	declare fontCache: Dictionary<Partial<Record<FontStyle, EmbeddedFont>>>;
 	declare patterns: Dictionary<PDFKit.PDFTilingPattern>;
 	declare images: Dictionary<string | Uint8Array | ArrayBuffer>;
+	declare svgs: Dictionary<string | Uint8Array | ArrayBuffer>;
 	declare attachments: Dictionary<AttachmentDefinition>;
 	declare virtualfs: VirtualFileSystem | null;
 	declare localAccessPolicy: LocalAccessPolicy | undefined;
@@ -66,6 +67,7 @@ class PDFDocument extends PDFKit {
 		options: PdfDocumentOptions = {},
 		virtualfs: VirtualFileSystem | null = null,
 		localAccessPolicy?: LocalAccessPolicy,
+		svgs: Dictionary<string | Uint8Array | ArrayBuffer> = {},
 	) {
 		super({ ...options, font: options.font ?? undefined });
 
@@ -106,6 +108,7 @@ class PDFDocument extends PDFKit {
 		}
 
 		this.images = images;
+		this.svgs = svgs;
 		this.attachments = attachments;
 		this.virtualfs = virtualfs;
 		this.localAccessPolicy = localAccessPolicy;

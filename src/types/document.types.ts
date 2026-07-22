@@ -1,4 +1,4 @@
-import type { Alignment, Color, Decoration, Margin } from "./index";
+import type { AcroFormDefinition, Alignment, Color, Decoration, Margin } from "./index";
 import type {
 	ContextSnapshot,
 	EndingCell,
@@ -17,7 +17,7 @@ import type {
 	TableLayout,
 	TableOffsets,
 } from "./table.types";
-import type { Inline, ListMarker, TextMeasurement } from "./text.types";
+import type { Inline, ListMarker, PdfFont, TextMeasurement } from "./text.types";
 
 export type Metadata = Record<string, unknown>;
 export type Nullable<T> = T | null;
@@ -70,6 +70,7 @@ export interface PdfNode {
 	svg?: string | SVGElement;
 	qr?: string;
 	attachment?: string | AttachmentSource;
+	acroform?: AcroFormDefinition;
 	toc?: TocDefinition;
 
 	// Public node options and styles used internally.
@@ -221,6 +222,7 @@ export interface PdfNode {
 	_rowSpanCurrentOffset?: number;
 	_x?: number;
 	_canvas?: Vector[];
+	_formFont?: PdfFont;
 }
 
 export interface PreprocessedNodeState<Node = PdfNode> {
@@ -254,6 +256,8 @@ export interface MeasuredNodeState<Node = PdfNode> {
 }
 
 export interface LayoutNodeState<Node = PdfNode> {
+	_node?: Node;
+	_position?: Position;
 	positions?: Position[];
 	pageBreaks?: PageBreak[];
 	nodeInfo?: NodeLayoutInfo;

@@ -9,7 +9,7 @@ import type {
 	LayoutPdfNode,
 	LineLike,
 	PageItem,
-	PageMarginDefinition,
+	PageMarginSource,
 } from "../types/internal";
 import { getFragmentHeight } from "./element-writer.helpers";
 
@@ -19,6 +19,7 @@ interface ElementFragment {
 	xOffset?: number;
 	yOffset?: number;
 	insertedOnPages: boolean[];
+	pageMarginLeft?: number;
 }
 
 /**
@@ -104,6 +105,10 @@ class PageElementWriter {
 		return this._fitOnPage(() => this.writer.addAttachment(attachment, index));
 	}
 
+	addAcroForm(node: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this._fitOnPage(() => this.writer.addAcroForm(node, index));
+	}
+
 	addVector(...parameters: Parameters<ElementWriter["addVector"]>): CurrentPosition | undefined {
 		return this.writer.addVector(...parameters);
 	}
@@ -153,6 +158,16 @@ class PageElementWriter {
 	}
 
 	moveToNextPage(pageOrientation?: PageOrientation): void {
+		const previousPage = this.context().getCurrentPage();
+		const previousMargins = previousPage?.pageMargins ?? this.context().pageMargins;
+		const previousColumnState =
+			previousPage && this.context().snapshots.length > 0 && !this.context().getSnakingSnapshot()
+				? {
+						x: this.context().x,
+						availableWidth: this.context().availableWidth,
+						pageMargins: previousMargins,
+					}
+				: null;
 		let nextPage = this.context().moveToNextPage(pageOrientation);
 
 		// moveToNextPage is called multiple times for table, because is called for each column
@@ -161,7 +176,15 @@ class PageElementWriter {
 		this.repeatables.forEach(function (this: PageElementWriter, rep): void {
 			if (rep.insertedOnPages[this.context().page] === undefined) {
 				rep.insertedOnPages[this.context().page] = true;
-				this.addFragment(rep, true);
+				const currentLeft = this.context().getCurrentPage().pageMargins.left;
+				const fragment =
+					rep.pageMarginLeft === undefined
+						? rep
+						: {
+								...rep,
+								xOffset: (rep.xOffset ?? 0) + currentLeft - rep.pageMarginLeft,
+							};
+				this.addFragment(fragment, true);
 			} else {
 				this.context().moveDown(rep.height);
 			}
@@ -172,12 +195,22 @@ class PageElementWriter {
 			prevY: nextPage.prevY,
 			y: this.context().y,
 		});
+
+		const currentMargins =
+			this.context().getCurrentPage().pageMargins ?? this.context().pageMargins;
+		if (
+			previousColumnState &&
+			(previousColumnState.pageMargins.left !== currentMargins.left ||
+				previousColumnState.pageMargins.right !== currentMargins.right)
+		) {
+			this.context().restoreColumnStateAfterPageBreak(previousColumnState);
+		}
 	}
 
 	addPage(
 		pageSize: Parameters<typeof normalizePageSize>[0],
 		pageOrientation: Parameters<typeof normalizePageSize>[1] | null,
-		pageMargin: PageMarginDefinition,
+		pageMargin: PageMarginSource,
 		customProperties: Record<string, unknown> = {},
 	): void {
 		const prevPage = this.context().page;
@@ -185,7 +218,7 @@ class PageElementWriter {
 
 		this.context().addPage(
 			normalizePageSize(pageSize, pageOrientation ?? undefined),
-			normalizePageMargin(pageMargin),
+			typeof pageMargin === "function" ? pageMargin : normalizePageMargin(pageMargin),
 			customProperties,
 		);
 
@@ -210,39 +243,49 @@ class PageElementWriter {
 
 			let nbPages = unbreakableContext.pages.length;
 			if (nbPages > 0) {
-				// no support for multi-page unbreakableBlocks
-				const fragment: ElementFragment = {
-					items: unbreakableContext.pages[0].items,
-					height: 0,
-					xOffset: forcedX,
-					yOffset: forcedY,
-					insertedOnPages: [],
-				};
+				if (forcedX !== undefined || forcedY !== undefined) {
+					const fragment: ElementFragment = {
+						items: unbreakableContext.pages[0].items,
+						height: 0,
+						xOffset: forcedX,
+						yOffset: forcedY,
+						insertedOnPages: [],
+					};
 
-				if (nbPages > 1) {
-					// on out-of-context blocs (headers, footers, background) height should be the whole DocumentContext height
-					if (forcedX !== undefined || forcedY !== undefined) {
+					// Detached content belongs to the current output page. Keep its historical
+					// single-page behavior even if its temporary context overflowed.
+					if (nbPages > 1) {
 						fragment.height =
 							unbreakableContext.getCurrentPage().pageSize.height -
 							unbreakableContext.pageMargins.top -
 							unbreakableContext.pageMargins.bottom;
 					} else {
-						fragment.height =
-							this.context().getCurrentPage().pageSize.height -
-							this.context().pageMargins.top -
-							this.context().pageMargins.bottom;
-						for (let i = 0, l = this.repeatables.length; i < l; i++) {
-							fragment.height -= this.repeatables[i].height;
-						}
+						fragment.height = getFragmentHeight(fragment.items, unbreakableContext.y);
 					}
-				} else {
-					fragment.height = getFragmentHeight(fragment.items, unbreakableContext.y);
+
+					this.writer.addFragment(fragment, true, true, true);
+					return;
 				}
 
-				if (forcedX !== undefined || forcedY !== undefined) {
-					this.writer.addFragment(fragment, true, true, true);
-				} else {
-					this.addFragment(fragment);
+				for (let pageIndex = 0; pageIndex < nbPages; pageIndex++) {
+					const sourcePage = unbreakableContext.pages[pageIndex];
+					const isLastPage = pageIndex === nbPages - 1;
+					const fragment: ElementFragment = {
+						items: sourcePage.items,
+						height: isLastPage
+							? getFragmentHeight(sourcePage.items, unbreakableContext.y)
+							: sourcePage.pageSize.height -
+								sourcePage.pageMargins.top -
+								sourcePage.pageMargins.bottom,
+						insertedOnPages: [],
+					};
+
+					if (!this.addFragment(fragment)) {
+						// Repeated headers can leave less usable height than the temporary page.
+						// Preserve the laid-out fragment once on the fresh page instead of dropping it.
+						fragment.xOffset = this.context().x;
+						this.writer.addFragment(fragment, true);
+					}
 				}
 			}
 		}
@@ -257,6 +300,9 @@ class PageElementWriter {
 		});
 
 		rep.xOffset = this.originalX;
+		rep.pageMarginLeft =
+			this.contextStack.at(-1)?.getCurrentPage().pageMargins.left ??
+			unbreakableContext.getCurrentPage().pageMargins.left;
 
 		rep.height = getFragmentHeight(rep.items, unbreakableContext.y);
 

@@ -35,8 +35,27 @@ const definition: DocumentDefinition = {
 			],
 		},
 		{ qr: "typed", mask: 1, padding: 2 },
+		{
+			acroform: {
+				type: "text",
+				id: "typed-field",
+				options: { required: true, value: "Typed value" },
+			},
+			width: "*",
+			height: 20,
+		},
+		{
+			text: [
+				"Inline field ",
+				{ acroform: { type: "checkbox", id: "typed-checkbox" }, width: 12, height: 12 },
+			],
+		},
 		{ toc: { id: "contents", sortBy: "title", outlines: true, hideEmpty: true } },
 	],
+	pageMargins: (currentPage, pageCount, pageSize) =>
+		currentPage === pageCount || pageSize.orientation === "landscape"
+			? [40, 40, 40, pageSize.height / 10]
+			: 40,
 	files: { source: { src: "source.txt", name: "source.txt" } },
 	version: "1.7",
 	tagged: true,

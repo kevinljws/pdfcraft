@@ -1,5 +1,6 @@
 import type { PageOrientation } from "../types";
-import type { Metadata, PageMargins, PageSize, PdfPage } from "../types/internal";
+import type { Metadata, PageMargins, PageMarginSource, PageSize, PdfPage } from "../types/internal";
+import { normalizePageMargin } from "../configuration/page-size";
 import {
 	beginColumn,
 	beginColumnGroup,
@@ -31,6 +32,9 @@ import type { EventArgs, EventKey, EventListener } from "../utils/event-emitter"
 class DocumentContext {
 	pages: PdfPage[] = [];
 	pageMargins: PageMargins = { left: 0, right: 0, top: 0, bottom: 0 };
+	pageMarginSource: PageMarginSource = this.pageMargins;
+	pageCount = 0;
+	pageMarginFunctionUsed = false;
 	x = 0;
 	y = 0;
 	availableWidth = 0;
@@ -144,7 +148,35 @@ class DocumentContext {
 		return this.availableHeight > 0;
 	}
 
+	restoreColumnStateAfterPageBreak(previous: {
+		x: number;
+		availableWidth: number;
+		pageMargins: PageMargins;
+	}): void {
+		if (this.snapshots.length === 0) return;
+		const currentMargins = this.getCurrentPage().pageMargins;
+		const translateX = (x: number): number => currentMargins.left + (x - previous.pageMargins.left);
+		const currentState = {
+			x: translateX(previous.x),
+			y: this.y,
+			page: this.page,
+			availableHeight: this.availableHeight,
+			availableWidth: previous.availableWidth,
+		};
+
+		this.x = currentState.x;
+		this.availableWidth = previous.availableWidth;
+		for (const snapshot of this.snapshots) {
+			snapshot.x = translateX(snapshot.x);
+			snapshot.y = this.y;
+			snapshot.page = this.page;
+			snapshot.availableHeight = this.availableHeight;
+			snapshot.bottomMost = bottomMostContext(currentState, snapshot.bottomMost ?? currentState);
+		}
+	}
+
 	initializePage(): void {
+		this.pageMargins = this.getCurrentPage().pageMargins ?? this.pageMargins;
 		this.y = this.pageMargins.top;
 		this.availableHeight =
 			this.getCurrentPage().pageSize.height - this.pageMargins.top - this.pageMargins.bottom;
@@ -163,13 +195,14 @@ class DocumentContext {
 	}
 
 	moveTo(x: number, y: number): void {
+		const margins = this.getCurrentPage().pageMargins;
 		if (x != null) {
 			this.x = x;
-			this.availableWidth = this.getCurrentPage().pageSize.width - x - this.pageMargins.right;
+			this.availableWidth = this.getCurrentPage().pageSize.width - x - margins.right;
 		}
 		if (y != null) {
 			this.y = y;
-			this.availableHeight = this.getCurrentPage().pageSize.height - y - this.pageMargins.bottom;
+			this.availableHeight = this.getCurrentPage().pageSize.height - y - margins.bottom;
 		}
 	}
 
@@ -205,6 +238,7 @@ class DocumentContext {
 		this.availableWidth = saved.availableWidth;
 		this.availableHeight = saved.availableHeight;
 		this.page = saved.page;
+		this.pageMargins = this.getCurrentPage().pageMargins;
 		this.lastColumnWidth = saved.lastColumnWidth;
 	}
 
@@ -241,16 +275,26 @@ class DocumentContext {
 
 	addPage(
 		pageSize: PageSize,
-		pageMargin: PageMargins | null = null,
+		pageMargin: PageMarginSource | null = null,
 		customProperties: Metadata = {},
 	): PdfPage {
 		if (pageMargin !== null) {
-			this.pageMargins = pageMargin;
-			this.x = pageMargin.left;
-			this.availableWidth = pageSize.width - pageMargin.left - pageMargin.right;
+			this.pageMarginSource = pageMargin;
 		}
+		let evaluatedMargins: PageMargins;
+		if (typeof this.pageMarginSource === "function") {
+			this.pageMarginFunctionUsed = true;
+			evaluatedMargins = normalizePageMargin(
+				this.pageMarginSource(this.pages.length + 1, this.pageCount, pageSize),
+			);
+		} else {
+			evaluatedMargins = normalizePageMargin(this.pageMarginSource);
+		}
+		this.pageMargins = evaluatedMargins;
+		this.x = evaluatedMargins.left;
+		this.availableWidth = pageSize.width - evaluatedMargins.left - evaluatedMargins.right;
 
-		const page = createPage(pageSize, this.pageMargins, customProperties);
+		const page = createPage(pageSize, evaluatedMargins, customProperties);
 		this.pages.push(page);
 		this.backgroundLength.push(0);
 		this.page = this.pages.length - 1;
@@ -264,7 +308,8 @@ class DocumentContext {
 	}
 
 	getCurrentPosition(): PagePosition {
-		return getPagePosition(this.getCurrentPage(), this.page, this.pageMargins, this.x, this.y);
+		const page = this.getCurrentPage();
+		return getPagePosition(page, this.page, page.pageMargins, this.x, this.y);
 	}
 }
 

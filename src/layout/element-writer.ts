@@ -7,10 +7,12 @@ import type {
 	LineLike,
 	PageBreak,
 	PageItem,
+	Position,
 	Vector,
 } from "../types/internal";
 import { addPageItem, alignCanvas, alignImage, getAlignmentOffset } from "./element-writer.helpers";
 import { addAttachment, addCanvas, addImage, addQr, addSVG } from "./element-writer.media";
+import { addAcroForm } from "./element-writer.form";
 
 export interface ElementWriterEvents {
 	lineAdded: [line: LineLike];
@@ -61,6 +63,10 @@ class ElementWriter {
 
 	addAttachment(attachment: LayoutPdfNode, index?: number): CurrentPosition | false {
 		return addAttachment(this, attachment, index);
+	}
+
+	addAcroForm(node: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return addAcroForm(this, node, index);
 	}
 
 	alignImage(image: LayoutPdfNode): void {
@@ -114,7 +120,6 @@ class ElementWriter {
 		const alignment = line.inlines.length > 0 ? line.inlines[0].alignment : undefined;
 
 		let offset = getAlignmentOffset(alignment ?? undefined, width, lineWidth);
-
 		if (offset) {
 			line.x = (line.x || 0) + offset;
 		}
@@ -226,9 +231,7 @@ class ElementWriter {
 				case "line":
 					var l = (item.item as LineLike).clone();
 
-					if (l._node) {
-						l._node.positions![0].pageNumber = ctx.page + 1;
-					}
+					updateNodePageNumbers(l, ctx.page + 1);
 					l.x = (l.x || 0) + (useBlockXOffset ? block.xOffset || 0 : ctx.x);
 					l.y = (l.y || 0) + (useBlockYOffset ? block.yOffset || 0 : ctx.y);
 
@@ -242,6 +245,7 @@ class ElementWriter {
 					var v = pack(item.item as Vector) as Vector & {
 						_isFillColorFromUnbreakable?: boolean;
 					};
+					updateNodePageNumbers(v, ctx.page + 1);
 
 					offsetVector(
 						v,
@@ -267,8 +271,10 @@ class ElementWriter {
 
 				case "image":
 				case "svg":
-				case "attachment": {
+				case "attachment":
+				case "acroform": {
 					const image = pack(item.item) as LayoutPdfNode;
+					updateNodePageNumbers(image, ctx.page + 1);
 
 					image.x = (image.x || 0) + (useBlockXOffset ? block.xOffset || 0 : ctx.x);
 					image.y = (image.y || 0) + (useBlockYOffset ? block.yOffset || 0 : ctx.y);
@@ -344,6 +350,22 @@ class ElementWriter {
 
 	getCurrentPositionOnPage(): CurrentPosition {
 		return (this.contextStack[0] || this.context()).getCurrentPosition();
+	}
+}
+
+function updateNodePageNumbers(
+	item: { _node?: LayoutPdfNode; _position?: Position },
+	pageNumber: number,
+): void {
+	if (item._position) {
+		item._position.pageNumber = pageNumber;
+		return;
+	}
+
+	// Compatibility for fragments created outside LayoutBuilder, where only a
+	// single position was historically associated with the rendered item.
+	if (item._node?.positions?.length === 1) {
+		item._node.positions[0].pageNumber = pageNumber;
 	}
 }
 

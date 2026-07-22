@@ -20,7 +20,7 @@ import type {
 	Style,
 	TableLayout as PublicTableLayout,
 } from "../types";
-import type { PageMargins, PageSize, PdfPage, TableLayout } from "../types/internal";
+import type { PageMarginSource, PageSize, PdfPage, TableLayout } from "../types/internal";
 import type { VerticalAlignmentStackEntry } from "./layout-builder.rows";
 import type { LayoutResult, PageBreakBefore } from "./layout-builder.types";
 import { resolveSectionPage, type SectionNode } from "./layout-builder.sections";
@@ -32,7 +32,7 @@ type TableLayoutSource = Partial<TableLayout> | PublicTableLayout;
  */
 class LayoutBuilder {
 	pageSize: PageSize;
-	pageMargins: PageMargins;
+	pageMargins: PageMarginSource;
 	svgMeasure: SVGMeasure;
 	tableLayouts: Dictionary<Partial<TableLayout<MeasuredPdfNode>>> = {};
 	nestedLevel = 0;
@@ -40,6 +40,7 @@ class LayoutBuilder {
 	docPreprocessor!: DocPreprocessor;
 	docMeasure!: DocMeasure;
 	linearNodeList: LayoutPdfNode[] = [];
+	suppressLinearNodeList = false;
 	writer!: PageElementWriter;
 	private readonly rows: LayoutBuilderRows;
 	private readonly content: LayoutBuilderContent;
@@ -50,7 +51,7 @@ class LayoutBuilder {
 	 * @param pageMargins - an object defining top, left, right and bottom margins
 	 * @param svgMeasure
 	 */
-	constructor(pageSize: PageSize, pageMargins: PageMargins, svgMeasure: SVGMeasure) {
+	constructor(pageSize: PageSize, pageMargins: PageMarginSource, svgMeasure: SVGMeasure) {
 		this.pageSize = pageSize;
 		this.pageMargins = pageMargins;
 		this.svgMeasure = svgMeasure;
@@ -134,6 +135,11 @@ class LayoutBuilder {
 			this.tableLayouts,
 		);
 
+		const maxLayoutPasses = 10;
+		let assumedPageCount = 0;
+		let layoutPass = 1;
+		const pageCountHistory = [assumedPageCount];
+		let warnedAboutCycle = false;
 		let result = this.tryLayoutDocument(
 			docStructure,
 			pdfDocument,
@@ -143,8 +149,31 @@ class LayoutBuilder {
 			header,
 			footer,
 			watermark,
+			assumedPageCount,
 		);
-		while (addPageBreaksIfNecessary(result.linearNodeList, result.pages, pageBreakBeforeFct)) {
+		while (layoutPass < maxLayoutPasses) {
+			const nextPageCount = result.pages.length;
+			const marginsNeedAnotherPass =
+				Boolean(result.pageMarginFunctionUsed) && assumedPageCount !== nextPageCount;
+			const pageBreakNeedsAnotherPass = addPageBreaksIfNecessary(
+				result.linearNodeList,
+				result.pages,
+				pageBreakBeforeFct,
+			);
+
+			if (!marginsNeedAnotherPass && !pageBreakNeedsAnotherPass) break;
+
+			if (marginsNeedAnotherPass) {
+				if (!warnedAboutCycle && pageCountHistory.includes(nextPageCount)) {
+					console.warn(
+						"Non-convergent dynamic pageMargins detected; layout stopped after a bounded number of passes.",
+					);
+					warnedAboutCycle = true;
+				}
+				assumedPageCount = nextPageCount;
+				pageCountHistory.push(nextPageCount);
+			}
+
 			resetNodePositions(result);
 			result = this.tryLayoutDocument(
 				docStructure,
@@ -155,7 +184,9 @@ class LayoutBuilder {
 				header,
 				footer,
 				watermark,
+				assumedPageCount,
 			);
+			layoutPass++;
 		}
 
 		return result.pages;
@@ -170,6 +201,7 @@ class LayoutBuilder {
 		header: unknown,
 		footer: unknown,
 		watermark: unknown,
+		pageCount = 0,
 	): LayoutResult {
 		const isNecessaryAddFirstPage = (document: LayoutPdfNode): boolean => {
 			if (document.stack && document.stack.length > 0 && document.stack[0].section) {
@@ -187,7 +219,10 @@ class LayoutBuilder {
 		const measuredDocument: MeasuredPdfNode = this.docMeasure.measureDocument(processedDocument);
 		const layoutDocument = measuredDocument as LayoutPdfNode;
 
-		this.writer = new PageElementWriter(new DocumentContext());
+		const documentContext = new DocumentContext();
+		documentContext.pageMarginSource = this.pageMargins;
+		documentContext.pageCount = pageCount;
+		this.writer = new PageElementWriter(documentContext);
 
 		this.writer.context().addListener("pageAdded", (page: PdfPage) => {
 			let backgroundGetter = background;
@@ -206,7 +241,11 @@ class LayoutBuilder {
 		this.repeatables.addHeadersAndFooters(header, footer);
 		this.repeatables.addWatermark(watermark, pdfDocument, defaultStyle);
 
-		return { pages: this.writer.context().pages, linearNodeList: this.linearNodeList };
+		return {
+			pages: this.writer.context().pages,
+			linearNodeList: this.linearNodeList,
+			pageMarginFunctionUsed: this.writer.context().pageMarginFunctionUsed,
+		};
 	}
 
 	processNode(node: LayoutPdfNode, isVerticalAlignmentAllowed: boolean = false): void {
@@ -259,7 +298,7 @@ class LayoutBuilder {
 			}
 		};
 
-		this.linearNodeList.push(node);
+		if (!this.suppressLinearNodeList) this.linearNodeList.push(node);
 		decorateNode(node);
 
 		let startPosition: ReturnType<DocumentContext["getCurrentPosition"]> | undefined;
@@ -318,6 +357,8 @@ class LayoutBuilder {
 				this.content.processQr(node);
 			} else if (node.attachment) {
 				this.content.processAttachment(node);
+			} else if (node.acroform) {
+				this.content.processAcroForm(node);
 			} else if (!node._span) {
 				throw new Error(`Unrecognized document structure: ${stringifyNode(node)}`);
 			}

@@ -24,6 +24,10 @@ export interface PageSize {
 	height: number;
 }
 
+export interface ResolvedPageSize extends PageSize {
+	orientation: PageOrientation;
+}
+
 export type PageSizeName =
 	| "4A0"
 	| "2A0"

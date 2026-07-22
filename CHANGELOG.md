@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Upstream pdfmake PR review
+
+#### Already covered
+
+- [bpampuch/pdfmake#1069 — Add word breaking to columns](https://github.com/bpampuch/pdfmake/pull/1069): already covered through the explicit `wordBreak: "break-all"` style and character-level measurement. PDFCraft keeps normal column minimum widths unless callers opt into breaking inside words, avoiding the PR's unconditional shrinking of star columns.
+- [bpampuch/pdfmake#1732 — Check for table body length](https://github.com/bpampuch/pdfmake/pull/1732): already fixed with stricter preprocessing errors for a missing table object, a missing or empty `table.body`, and non-array rows.
+- [bpampuch/pdfmake#2289 — Throw an error when content doesn't fit to page](https://github.com/bpampuch/pdfmake/pull/2289): already fixed with safer behavior: oversized images, SVGs and canvases render once on an otherwise empty page instead of causing repeated blank pages or an unconditional exception.
+- [bpampuch/pdfmake#2939 — Support `application/octet-stream` for base64 images](https://github.com/bpampuch/pdfmake/pull/2939): already supported by inline-image data URL detection and covered by typed binary-image resource tests.
+
+#### Ported
+
+- [bpampuch/pdfmake#2940 — Fix rowSpan header verticalAlignment on repeated tables](https://github.com/bpampuch/pdfmake/pull/2940): use the table cell's final page metadata when calculating a repeated row-spanned header's vertical alignment, preventing negative view heights and displaced header text.
+- [bpampuch/pdfmake#2927 — Fix pageBreakBefore with unbreakable blocks](https://github.com/bpampuch/pdfmake/pull/2927): track every text, image, SVG, canvas, QR and attachment node moved out of an unbreakable block, update all of its page positions, and exclude backgrounds, headers and footers from `pageBreakBefore` navigation. PDFCraft already retained attachments inside fragments; the remaining stale-position and repeatable-node issues are now fixed.
+- [bpampuch/pdfmake#2497 — Border and borderColor in styles](https://github.com/bpampuch/pdfmake/pull/2497): table cells now inherit `border`, `borderColor`, `fillColor` and `fillOpacity` from named styles, with matching public TypeScript properties and precedence for cell-level overrides.
+- [bpampuch/pdfmake#2231 — Partially fix dontBreakRows not fitting on single page #1159](https://github.com/bpampuch/pdfmake/pull/2231): oversized unbreakable table rows are now committed across every temporary layout page instead of silently discarding all pages after the first; per-item position tracking also preserves correct page numbers when moved content spans several pages.
+- [bpampuch/pdfmake#2228 — Better SVG handling](https://github.com/bpampuch/pdfmake/pull/2228): the missing-`viewBox` scaling fix was already present; named SVG resources can now be declared through `documentDefinition.svgs`, including resolved URLs and VFS files, while base64 and percent-encoded SVG data URLs are decoded explicitly without changing raster `image` semantics.
+- [bpampuch/pdfmake#2866 — Fix for MacOS Preview rendering issue](https://github.com/bpampuch/pdfmake/pull/2866): table cell fills and overlay patterns now overlap their neighboring borders by 0.5 pt, preventing anti-aliasing seams in macOS Preview and similarly sensitive PDF viewers.
+- [bpampuch/pdfmake#1287 — Add support for inline images](https://github.com/bpampuch/pdfmake/pull/1287): text arrays can now contain typed image fragments; inline images are resolved through the existing image registry, measured as part of line wrapping and baseline layout, and rendered with their configured dimensions, opacity and links.
+- [bpampuch/pdfmake#2922 — Dynamic Page Margin](https://github.com/bpampuch/pdfmake/pull/2922): `pageMargins` can now be a callback receiving the current page, total page count and resolved page size. Layout is repeated with a bounded convergence strategy when margins depend on the final page count, page-local geometry follows each resolved margin, and columns plus repeated table headers are rebased correctly across pages with different horizontal margins. Non-convergent definitions emit one warning instead of looping indefinitely.
+- [bpampuch/pdfmake#2843 — Acroforms](https://github.com/bpampuch/pdfmake/pull/2843): added typed block-level and inline AcroForm fields backed by PDFKit, with text, push-button, list, combo-box and checkbox controls; fields participate in measurement, wrapping, columns, page breaks and unbreakable fragments. Definitions are validated before layout, form initialization is shared across the document, and each field uses its resolved document font. The PR's radio-button example and `subsetFonts` workaround were intentionally not carried over because the upstream patch itself removed the unsupported radio flow and current PDFKit manages form font dictionaries directly.
+
 ## [0.4.4] - 2026-07-22
 
 ### Added

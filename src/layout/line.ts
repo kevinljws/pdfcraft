@@ -1,4 +1,10 @@
-import type { Inline, LayoutPdfNode, MeasuredPdfNode, OutlineDefinition } from "../types/internal";
+import type {
+	Inline,
+	LayoutPdfNode,
+	MeasuredPdfNode,
+	OutlineDefinition,
+	Position,
+} from "../types/internal";
 
 class Line {
 	maxWidth: number;
@@ -12,6 +18,7 @@ class Line {
 	y = 0;
 	id?: string;
 	_node?: LayoutPdfNode;
+	_position?: Position;
 	_outline?: OutlineDefinition;
 	_pageNodeRef?: MeasuredPdfNode | LayoutPdfNode;
 
@@ -61,7 +68,12 @@ class Line {
 		let y = 0;
 
 		this.inlines.forEach((inline) => {
-			y = Math.max(y, (inline.font.ascender / 1000) * inline.fontSize);
+			y = Math.max(
+				y,
+				inline.image !== undefined || inline.acroform !== undefined
+					? (inline._imageHeight ?? inline.height)
+					: (inline.font.ascender / 1000) * inline.fontSize,
+			);
 		});
 
 		return y;
