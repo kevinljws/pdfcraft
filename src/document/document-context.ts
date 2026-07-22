@@ -1,13 +1,140 @@
 import type { PageOrientation } from "../types";
 import type { Metadata, PageMargins, PageSize, PdfPage } from "../types/internal";
 import DocumentContextColumns from "./document-context.columns";
+import type { DocumentContextEvents } from "./document-context.events";
 import { bottomMostContext, getPageSize } from "./document-context.geometry";
 import { createPage, getPagePosition } from "./document-context.helpers";
-import type { ContextSnapshot, PagePosition } from "./document-context.types";
+import DocumentContextSnaking from "./document-context.snaking";
+import type { ColumnEndingCell, ContextSnapshot, PagePosition } from "./document-context.types";
+import EventEmitter from "../utils/event-emitter";
+import type { EventArgs, EventKey, EventListener } from "../utils/event-emitter";
 
-class DocumentContext extends DocumentContextColumns {
+class DocumentContext {
+	pages: PdfPage[] = [];
+	pageMargins: PageMargins = { left: 0, right: 0, top: 0, bottom: 0 };
+	x = 0;
+	y = 0;
+	availableWidth = 0;
+	availableHeight = 0;
+	page = -1;
+	snapshots: ContextSnapshot[] = [];
+	backgroundLength: number[] = [];
+	lastColumnWidth = 0;
+	marginXTopParent: [number, number] | null = null;
+	height = 0;
+
+	private readonly events = new EventEmitter<DocumentContextEvents>();
+	private readonly columns: DocumentContextColumns;
+	private readonly snaking: DocumentContextSnaking;
+
 	constructor() {
-		super();
+		this.columns = new DocumentContextColumns(this);
+		this.snaking = new DocumentContextSnaking(
+			this,
+			(destination, endingCell) => this.columns.calculateBottomMost(destination, endingCell),
+			() => this.getCurrentPage(),
+		);
+	}
+
+	addListener<Event extends EventKey<DocumentContextEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<DocumentContextEvents, Event>>,
+	): this {
+		this.events.addListener(event, listener);
+		return this;
+	}
+
+	on<Event extends EventKey<DocumentContextEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<DocumentContextEvents, Event>>,
+	): this {
+		return this.addListener(event, listener);
+	}
+
+	removeListener<Event extends EventKey<DocumentContextEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<DocumentContextEvents, Event>>,
+	): this {
+		this.events.removeListener(event, listener);
+		return this;
+	}
+
+	emit<Event extends EventKey<DocumentContextEvents>>(
+		event: Event,
+		...args: EventArgs<DocumentContextEvents, Event>
+	): boolean {
+		return this.events.emit(event, ...args);
+	}
+
+	getSnakingSnapshot(): ContextSnapshot | null {
+		return this.snaking.getSnakingSnapshot();
+	}
+
+	inSnakingColumns(): boolean {
+		return this.snaking.inSnakingColumns();
+	}
+
+	isInNestedNonSnakingGroup(): boolean {
+		return this.snaking.isInNestedNonSnakingGroup();
+	}
+
+	moveToNextColumn(): { prevY: number; y: number } {
+		return this.snaking.moveToNextColumn();
+	}
+
+	resetSnakingColumnsForNewPage(): void {
+		this.snaking.resetSnakingColumnsForNewPage();
+	}
+
+	beginColumnGroup(
+		marginXTopParent: [number, number] | null = null,
+		bottomByPage: Record<number, number> = {},
+		snakingColumns = false,
+		columnGap = 0,
+		columnWidths: number[] | null = null,
+	): void {
+		this.columns.beginColumnGroup(
+			marginXTopParent,
+			bottomByPage,
+			snakingColumns,
+			columnGap,
+			columnWidths,
+		);
+	}
+
+	updateBottomByPage(): void {
+		this.columns.updateBottomByPage();
+	}
+
+	resetMarginXTopParent(): void {
+		this.columns.resetMarginXTopParent();
+	}
+
+	beginColumn(
+		width: number = this.availableWidth,
+		offset = 0,
+		endingCell: ColumnEndingCell | null = null,
+	): void {
+		this.columns.beginColumn(width, offset, endingCell);
+	}
+
+	calculateBottomMost(destination: ContextSnapshot, endingCell: ColumnEndingCell | null): void {
+		this.columns.calculateBottomMost(destination, endingCell);
+	}
+
+	markEnding(endingCell: ColumnEndingCell, originalXOffset = 0, discountY = 0): void {
+		this.columns.markEnding(endingCell, originalXOffset, discountY);
+	}
+
+	saveContextInEndingCell(endingCell: ColumnEndingCell): void {
+		this.columns.saveContextInEndingCell(endingCell);
+	}
+
+	completeColumnGroup(
+		height = 0,
+		endingCell: ColumnEndingCell | null | undefined = null,
+	): Record<number, number> {
+		return this.columns.completeColumnGroup(height, endingCell);
 	}
 
 	addMargin(left: number, right = 0): void {

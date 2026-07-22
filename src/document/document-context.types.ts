@@ -1,5 +1,5 @@
 import type { PageOrientation } from "../types";
-import type { Metadata, PageMargins, PageSize } from "../types/internal";
+import type { Metadata, PageMargins, PageSize, PdfPage } from "../types/internal";
 
 export interface ContextCoordinates {
 	x: number;
@@ -17,6 +17,16 @@ export interface ContextSnapshot extends ContextCoordinates {
 	snakingColumns?: boolean;
 	gap?: number;
 	columnWidths?: number[] | null;
+}
+
+export interface DocumentContextState extends ContextCoordinates {
+	pages: PdfPage[];
+	pageMargins: PageMargins;
+	snapshots: ContextSnapshot[];
+	backgroundLength: number[];
+	lastColumnWidth: number;
+	marginXTopParent: [number, number] | null;
+	height: number;
 }
 
 export interface ColumnEndingContext extends ContextCoordinates {
