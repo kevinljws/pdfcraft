@@ -210,3 +210,7 @@ Thanks to all upstream pdfmake and PDFKit contributors, as well as everyone cont
 pdfcraft is distributed under the MIT License.
 
 This project includes code derived from pdfmake. The original pdfmake copyright notices and MIT License are preserved in [LICENSE](./LICENSE).
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for release history and notable changes.
