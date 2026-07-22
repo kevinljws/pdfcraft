@@ -1,25 +1,65 @@
 import { isNumber } from "../utils/variable-type";
 import { pack, offsetVector } from "../utils/tools";
+import EventEmitter from "../utils/event-emitter";
+import type { EventArgs, EventKey, EventListener } from "../utils/event-emitter";
 import DocumentContext from "../document/document-context";
 import type { CurrentPosition, LayoutPdfNode, LineLike, PageItem, Vector } from "../types/internal";
 import { addPageItem, getAlignmentOffset } from "./element-writer.helpers";
 import ElementWriterMedia from "./element-writer.media";
+import type { ElementWriterEvents } from "./element-writer.types";
 
 /**
  * A line/vector writer, which adds elements to current page and sets
  * their positions based on the context
  */
-class ElementWriter extends ElementWriterMedia {
+class ElementWriter {
 	_context: DocumentContext;
 	contextStack: DocumentContext[];
+	private readonly events = new EventEmitter<ElementWriterEvents>();
+	private readonly media: ElementWriterMedia;
 
 	/**
 	 * @param context
 	 */
 	constructor(context: DocumentContext) {
-		super();
 		this._context = context;
 		this.contextStack = [];
+		this.media = new ElementWriterMedia(
+			() => this.context(),
+			() => this.getCurrentPositionOnPage(),
+			(vector, ignoreContextX, ignoreContextY, index, forcePage) =>
+				this.addVector(vector, ignoreContextX, ignoreContextY, index, forcePage),
+		);
+	}
+
+	addListener<Event extends EventKey<ElementWriterEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<ElementWriterEvents, Event>>,
+	): this {
+		this.events.addListener(event, listener);
+		return this;
+	}
+
+	on<Event extends EventKey<ElementWriterEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<ElementWriterEvents, Event>>,
+	): this {
+		return this.addListener(event, listener);
+	}
+
+	removeListener<Event extends EventKey<ElementWriterEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<ElementWriterEvents, Event>>,
+	): this {
+		this.events.removeListener(event, listener);
+		return this;
+	}
+
+	emit<Event extends EventKey<ElementWriterEvents>>(
+		event: Event,
+		...args: EventArgs<ElementWriterEvents, Event>
+	): boolean {
+		return this.events.emit(event, ...args);
 	}
 
 	/**
@@ -27,6 +67,34 @@ class ElementWriter extends ElementWriterMedia {
 	 */
 	context(): DocumentContext {
 		return this._context;
+	}
+
+	addImage(image: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this.media.addImage(image, index);
+	}
+
+	addCanvas(node: LayoutPdfNode, index?: number): false | Array<CurrentPosition | undefined> {
+		return this.media.addCanvas(node, index);
+	}
+
+	addSVG(image: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this.media.addSVG(image, index);
+	}
+
+	addQr(qr: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this.media.addQr(qr, index);
+	}
+
+	addAttachment(attachment: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this.media.addAttachment(attachment, index);
+	}
+
+	alignImage(image: LayoutPdfNode): void {
+		this.media.alignImage(image);
+	}
+
+	alignCanvas(node: LayoutPdfNode): void {
+		this.media.alignCanvas(node);
 	}
 
 	addLine(

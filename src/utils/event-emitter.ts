@@ -1,10 +1,10 @@
 type EventMap = object;
-type EventKey<Events extends EventMap> = Extract<keyof Events, string | symbol>;
-type EventArgs<
+export type EventKey<Events extends EventMap> = Extract<keyof Events, string | symbol>;
+export type EventArgs<
 	Events extends EventMap,
 	Event extends EventKey<Events>,
 > = Events[Event] extends unknown[] ? Events[Event] : never;
-type EventListener<Args extends unknown[]> = (...args: Args) => void;
+export type EventListener<Args extends unknown[]> = (...args: Args) => void;
 
 /**
  * Minimal event emitter used by the layout engine in Node.js and browsers.

@@ -1,19 +1,21 @@
-import EventEmitter from "../utils/event-emitter";
 import type DocumentContext from "../document/document-context";
 import type { CurrentPosition, LayoutPdfNode, Vector } from "../types/internal";
 import { addPageItem, alignCanvas, alignImage } from "./element-writer.helpers";
-import type { ElementWriterEvents } from "./element-writer.types";
 
-abstract class ElementWriterMedia extends EventEmitter<ElementWriterEvents> {
-	abstract context(): DocumentContext;
-	abstract getCurrentPositionOnPage(): CurrentPosition;
-	abstract addVector(
-		vector: Vector,
-		ignoreContextX?: boolean,
-		ignoreContextY?: boolean,
-		index?: number,
-		forcePage?: number,
-	): CurrentPosition | undefined;
+type AddVector = (
+	vector: Vector,
+	ignoreContextX?: boolean,
+	ignoreContextY?: boolean,
+	index?: number,
+	forcePage?: number,
+) => CurrentPosition | undefined;
+
+class ElementWriterMedia {
+	constructor(
+		private readonly context: () => DocumentContext,
+		private readonly getCurrentPositionOnPage: () => CurrentPosition,
+		private readonly addVector: AddVector,
+	) {}
 
 	private mediaFitsCurrentPage(node: LayoutPdfNode, height: number): boolean {
 		const context = this.context();

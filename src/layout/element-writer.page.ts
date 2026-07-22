@@ -2,15 +2,17 @@ import ElementWriter from "./element-writer";
 import { normalizePageSize, normalizePageMargin } from "../configuration/page-size";
 import type { PageOrientation } from "../types";
 import type DocumentContext from "../document/document-context";
+import EventEmitter from "../utils/event-emitter";
+import type { EventArgs, EventKey, EventListener } from "../utils/event-emitter";
 import type {
 	CurrentPosition,
 	LayoutPdfNode,
 	LineLike,
 	PageItem,
 	PageMarginDefinition,
-	Vector,
 } from "../types/internal";
 import { getFragmentHeight } from "./element-writer.fragments";
+import type { ElementWriterEvents } from "./element-writer.types";
 
 interface ElementFragment {
 	items: PageItem[];
@@ -28,7 +30,9 @@ interface ElementFragment {
  * - transactions (used for unbreakable-blocks when we want to make sure
  *                 whole block will be rendered on the same page)
  */
-class PageElementWriter extends ElementWriter {
+class PageElementWriter {
+	private readonly writer: ElementWriter;
+	private readonly events = new EventEmitter<ElementWriterEvents>();
 	transactionLevel: number;
 	repeatables: ElementFragment[];
 	originalX = 0;
@@ -37,77 +41,124 @@ class PageElementWriter extends ElementWriter {
 	 * @param context
 	 */
 	constructor(context: DocumentContext) {
-		super(context);
+		this.writer = new ElementWriter(context);
+		this.writer.addListener("lineAdded", (line) => this.emit("lineAdded", line));
 		this.transactionLevel = 0;
 		this.repeatables = [];
 	}
 
-	override addLine(
+	addListener<Event extends EventKey<ElementWriterEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<ElementWriterEvents, Event>>,
+	): this {
+		this.events.addListener(event, listener);
+		return this;
+	}
+
+	on<Event extends EventKey<ElementWriterEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<ElementWriterEvents, Event>>,
+	): this {
+		return this.addListener(event, listener);
+	}
+
+	removeListener<Event extends EventKey<ElementWriterEvents>>(
+		event: Event,
+		listener: EventListener<EventArgs<ElementWriterEvents, Event>>,
+	): this {
+		this.events.removeListener(event, listener);
+		return this;
+	}
+
+	emit<Event extends EventKey<ElementWriterEvents>>(
+		event: Event,
+		...args: EventArgs<ElementWriterEvents, Event>
+	): boolean {
+		return this.events.emit(event, ...args);
+	}
+
+	get contextStack(): DocumentContext[] {
+		return this.writer.contextStack;
+	}
+
+	context(): DocumentContext {
+		return this.writer.context();
+	}
+
+	addLine(
 		line: LineLike,
 		dontUpdateContextPosition?: boolean,
 		index?: number,
 	): CurrentPosition | false {
-		return this._fitOnPage(() => super.addLine(line, dontUpdateContextPosition, index));
+		return this._fitOnPage(() => this.writer.addLine(line, dontUpdateContextPosition, index));
 	}
 
-	override addImage(image: LayoutPdfNode, index?: number): CurrentPosition | false {
-		return this._fitOnPage(() => super.addImage(image, index));
+	addImage(image: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this._fitOnPage(() => this.writer.addImage(image, index));
 	}
 
-	override addCanvas(
-		image: LayoutPdfNode,
-		index?: number,
-	): false | Array<CurrentPosition | undefined> {
-		return this._fitOnPage(() => super.addCanvas(image, index));
+	addCanvas(image: LayoutPdfNode, index?: number): false | Array<CurrentPosition | undefined> {
+		return this._fitOnPage(() => this.writer.addCanvas(image, index));
 	}
 
-	override addSVG(image: LayoutPdfNode, index?: number): CurrentPosition | false {
-		return this._fitOnPage(() => super.addSVG(image, index));
+	addSVG(image: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this._fitOnPage(() => this.writer.addSVG(image, index));
 	}
 
-	override addQr(qr: LayoutPdfNode, index?: number): CurrentPosition | false {
-		return this._fitOnPage(() => super.addQr(qr, index));
+	addQr(qr: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this._fitOnPage(() => this.writer.addQr(qr, index));
 	}
 
-	override addAttachment(attachment: LayoutPdfNode, index?: number): CurrentPosition | false {
-		return this._fitOnPage(() => super.addAttachment(attachment, index));
+	addAttachment(attachment: LayoutPdfNode, index?: number): CurrentPosition | false {
+		return this._fitOnPage(() => this.writer.addAttachment(attachment, index));
 	}
 
-	override addVector(
-		vector: Vector,
-		ignoreContextX?: boolean,
-		ignoreContextY?: boolean,
-		index?: number,
-		forcePage?: number,
-	): CurrentPosition | undefined {
-		return super.addVector(vector, ignoreContextX, ignoreContextY, index, forcePage);
+	addVector(...parameters: Parameters<ElementWriter["addVector"]>): CurrentPosition | undefined {
+		return this.writer.addVector(...parameters);
 	}
 
-	override beginClip(width: number, height: number): boolean {
-		return super.beginClip(width, height);
+	beginClip(width: number, height: number): boolean {
+		return this.writer.beginClip(width, height);
 	}
 
-	override endClip(): boolean {
-		return super.endClip();
+	endClip(): boolean {
+		return this.writer.endClip();
 	}
 
-	override beginVerticalAlignment(verticalAlignment?: string): PageItem {
-		return super.beginVerticalAlignment(verticalAlignment);
+	beginVerticalAlignment(verticalAlignment?: string): PageItem {
+		return this.writer.beginVerticalAlignment(verticalAlignment);
 	}
 
-	override endVerticalAlignment(verticalAlignment?: string): PageItem {
-		return super.endVerticalAlignment(verticalAlignment);
+	endVerticalAlignment(verticalAlignment?: string): PageItem {
+		return this.writer.endVerticalAlignment(verticalAlignment);
 	}
 
-	override addFragment(
+	addFragment(
 		fragment: ElementFragment,
 		useBlockXOffset?: boolean,
 		useBlockYOffset?: boolean,
 		dontUpdateContextPosition?: boolean,
 	): boolean {
 		return this._fitOnPage(() =>
-			super.addFragment(fragment, useBlockXOffset, useBlockYOffset, dontUpdateContextPosition),
+			this.writer.addFragment(
+				fragment,
+				useBlockXOffset,
+				useBlockYOffset,
+				dontUpdateContextPosition,
+			),
 		);
+	}
+
+	pushContext(contextOrWidth?: DocumentContext | number, height?: number): void {
+		this.writer.pushContext(contextOrWidth, height);
+	}
+
+	popContext(): void {
+		this.writer.popContext();
+	}
+
+	getCurrentPositionOnPage(): CurrentPosition {
+		return this.writer.getCurrentPositionOnPage();
 	}
 
 	moveToNextPage(pageOrientation?: PageOrientation): void {
@@ -198,7 +249,7 @@ class PageElementWriter extends ElementWriter {
 				}
 
 				if (forcedX !== undefined || forcedY !== undefined) {
-					super.addFragment(fragment, true, true, true);
+					this.writer.addFragment(fragment, true, true, true);
 				} else {
 					this.addFragment(fragment);
 				}
