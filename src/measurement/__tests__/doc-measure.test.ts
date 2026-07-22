@@ -183,7 +183,7 @@ describe("DocMeasure", function () {
 			var called = false;
 			var node = { text: "abc" };
 
-			dm.textInlines = {
+			(dm as unknown as { textInlines: TextInlines }).textInlines = {
 				buildInlines: function () {
 					called = true;
 					return { items: ["abc"], minWidth: 1, maxWidth: 10 };
