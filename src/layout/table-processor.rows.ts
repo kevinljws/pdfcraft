@@ -1,0 +1,156 @@
+import type PageElementWriter from "./element-writer.page";
+import { isNumber } from "../utils/variable-type";
+import type { TableProcessorState } from "./table-processor.types";
+
+export interface TableLinePosition {
+	x: number;
+	index: number;
+}
+
+export interface TableRowRenderState extends TableProcessorState {
+	dontBreakRows: boolean;
+	bottomLineWidth: number;
+	rowPaddingTop: number;
+	rowPaddingBottom: number;
+	reservedAtBottom: number;
+	rowTopPageY: number;
+	drawVerticalLine(
+		x: number,
+		y0: number,
+		y1: number,
+		vLineColIndex: number,
+		writer: PageElementWriter,
+		vLineRowIndex: number,
+		beforeVLineColIndex: number | null,
+	): void;
+}
+
+interface RowSegment {
+	y1: number;
+	y2: number;
+	willBreak: boolean;
+	horizontalLineOffset: number;
+}
+
+export function drawTableRowSegment(
+	processor: TableRowRenderState,
+	rowIndex: number,
+	writer: PageElementWriter,
+	xs: TableLinePosition[],
+	segment: RowSegment,
+): void {
+	const body = processor.tableNode.table!.body;
+	const { y1, y2, willBreak, horizontalLineOffset } = segment;
+
+	for (let i = 0, l = xs.length; i < l; i++) {
+		let leftCellBorder = false;
+		let rightCellBorder = false;
+		const colIndex = xs[i].index;
+
+		if (colIndex < body[rowIndex].length) {
+			const cell = body[rowIndex][colIndex];
+			leftCellBorder = cell.border ? cell.border[0] : processor.layout.defaultBorder;
+			rightCellBorder = cell.border ? cell.border[2] : processor.layout.defaultBorder;
+		}
+		if (colIndex > 0 && !leftCellBorder) {
+			const cell = body[rowIndex][colIndex - 1];
+			leftCellBorder = cell.border ? cell.border[2] : processor.layout.defaultBorder;
+		}
+		if (colIndex + 1 < body[rowIndex].length && !rightCellBorder) {
+			const cell = body[rowIndex][colIndex + 1];
+			rightCellBorder = cell.border ? cell.border[0] : processor.layout.defaultBorder;
+		}
+
+		if (leftCellBorder) {
+			processor.drawVerticalLine(
+				xs[i].x,
+				y1 - horizontalLineOffset,
+				y2 + processor.bottomLineWidth,
+				xs[i].index,
+				writer,
+				rowIndex,
+				xs[i - 1]?.index ?? null,
+			);
+		}
+
+		if (i >= l - 1) continue;
+		const cell = body[rowIndex][colIndex];
+		cell._willBreak ??= willBreak;
+		if (cell._bottomY === undefined) {
+			let bottomY = processor.dontBreakRows
+				? y2 + processor.bottomLineWidth
+				: y2 + processor.bottomLineWidth / 2;
+			if (willBreak || processor.dontBreakRows) bottomY -= processor.rowPaddingBottom;
+			cell._bottomY = bottomY - processor.reservedAtBottom;
+		}
+		cell._rowTopPageY = processor.rowTopPageY;
+		if (processor.dontBreakRows) cell._rowTopPageYPadding = processor.rowPaddingTop;
+		cell._lastPageNumber = writer.context().page + 1;
+
+		let fillColor = cell.fillColor;
+		let fillOpacity = cell.fillOpacity;
+		if (!fillColor) {
+			fillColor =
+				typeof processor.layout.fillColor === "function"
+					? (processor.layout.fillColor(rowIndex, processor.tableNode, colIndex) ?? undefined)
+					: (processor.layout.fillColor ?? undefined);
+		}
+		if (!isNumber(fillOpacity)) {
+			fillOpacity =
+				typeof processor.layout.fillOpacity === "function"
+					? processor.layout.fillOpacity(rowIndex, processor.tableNode, colIndex)
+					: processor.layout.fillOpacity;
+		}
+		const overlayPattern = cell.overlayPattern;
+		if (!fillColor && !overlayPattern) continue;
+
+		const leftBorderWidth = leftCellBorder
+			? processor.layout.vLineWidth(colIndex, processor.tableNode)
+			: 0;
+		let rightBorderWidth = 0;
+		if ((colIndex === 0 || colIndex + 1 === body[rowIndex].length) && !rightCellBorder) {
+			rightBorderWidth = processor.layout.vLineWidth(colIndex + 1, processor.tableNode);
+		} else if (rightCellBorder) {
+			rightBorderWidth = processor.layout.vLineWidth(colIndex + 1, processor.tableNode) / 2;
+		}
+
+		const x1 = processor.dontBreakRows ? xs[i].x + leftBorderWidth : xs[i].x + leftBorderWidth / 2;
+		const fillY1 = processor.dontBreakRows ? y1 : y1 - horizontalLineOffset / 2;
+		const x2 = xs[i + 1].x + rightBorderWidth;
+		const fillY2 = processor.dontBreakRows
+			? y2 + processor.bottomLineWidth
+			: y2 + processor.bottomLineWidth / 2;
+		const rectangle = {
+			type: "rect" as const,
+			x: x1,
+			y: fillY1,
+			w: x2 - x1,
+			h: fillY2 - fillY1,
+			lineWidth: 0,
+		};
+		if (fillColor) {
+			writer.addVector(
+				{
+					...rectangle,
+					color: fillColor,
+					fillOpacity,
+					_isFillColorFromUnbreakable: Boolean(writer.transactionLevel),
+				},
+				false,
+				true,
+				writer.context().backgroundLength[writer.context().page],
+			);
+		}
+		if (overlayPattern) {
+			writer.addVector(
+				{
+					...rectangle,
+					color: overlayPattern,
+					fillOpacity: cell.overlayOpacity,
+				},
+				false,
+				true,
+			);
+		}
+	}
+}

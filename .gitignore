@@ -1,0 +1,8 @@
+coverage/
+dist/
+node_modules/
+private/
+.DS_Store
+.idea
+.env
+AGENTS.md

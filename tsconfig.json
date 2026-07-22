@@ -1,0 +1,35 @@
+{
+	"compilerOptions": {
+		"allowJs": false,
+		"allowImportingTsExtensions": true,
+		"checkJs": false,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"paths": {
+			"pdfcraft": ["./src/index.ts"],
+			"pdfcraft/browser": ["./src/browser/index.ts"],
+			"pdfcraft/types": ["./src/types/index.ts"]
+		},
+		"noEmit": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitOverride": true,
+		"noUncheckedSideEffectImports": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ES2022",
+		"types": [],
+		"useDefineForClassFields": false,
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true
+	},
+	"include": [
+		"src/**/*.ts",
+		"tests/browser/**/*.ts",
+		"tests/consumer/**/*.ts",
+		"tests/integration/**/*.ts",
+		"*.config.mts"
+	]
+}
