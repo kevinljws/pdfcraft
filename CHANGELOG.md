@@ -6,6 +6,73 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-07-22
+
+### Added
+
+- Binary image resources can now be supplied as `Uint8Array` or `ArrayBuffer` values in addition to strings.
+- Playground document parsing now resolves sample resources through a shared resource map, allowing images and attachments to remain portable between the Node.js and React playgrounds.
+- Regression tests cover binary resource resolution, reusable in-memory attachments, functional document-context helpers and robust cloning of dynamic content.
+
+### Changed
+
+- Replaced the remaining inheritance chains in `Renderer`, `DocMeasure`, `ElementWriter`, `DocumentContext` and `LayoutBuilder` with explicit composition while preserving their existing responsibilities.
+- Split renderer graphics, document measurement, element writing, document context and layout-builder operations into focused collaborators.
+- Simplified stateless collaborators further: document-column, snaking-column and media-writing operations are now functions instead of one-owner class instances.
+- Consolidated small event, fragment and writer-type modules into their owning modules and removed redundant event forwarding.
+- Made layout-builder host contracts private implementation details.
+- Replaced JSON serialization used for repeating static headers and footers with the shared document clone utility. Plain objects are still deeply copied, while cycles and non-JSON values are handled safely.
+- Renamed the Node-specific local resource callback contract from the overly broad `AccessPolicy` type to `LocalAccessPolicy` throughout the public and internal Node APIs.
+- Split CI into named quality, contract, coverage, unit, integration, browser and package jobs. Node.js 22 and 24 remain covered where relevant.
+- Removed the repository-specific Cursor rule file and ignored local `.cursor` and pdfmake working directories.
+- Replaced the invoice playground sample with new fictional company, customer, invoice, service and payment data.
+
+### Fixed
+
+- Preserved attachment metadata when an attachment source is loaded from the virtual file system instead of returning only the raw file bytes.
+- Allowed in-memory attachment objects to be reused safely across PDF generations.
+- Assigned a deterministic creation date to in-memory attachments when none is supplied, improving reproducibility.
+- Made data-URL detection case-insensitive.
+- Restricted attachment and embedded-file URL resolution to valid string or `{ url }` resource references, preventing binary sources from being misinterpreted as URLs.
+- Corrected image resource typing and conversion so binary resources reach PDFKit in a supported form.
+- Updated the playground server and browser generator to resolve document resources consistently after the resource-loading refactor.
+- Kept `PageElementWriter.emit()` as the observable event boundary after removing writer inheritance and redundant event buses.
+
+### Tests and validation
+
+- Expanded renderer coverage for vector state, clipping, paths, gradients, patterns, images, SVGs, QR codes, attachments, links, outlines and page lifecycle behavior.
+- Added coverage for table-layout callbacks, server output reuse, PDF document resources and browser entry generation.
+- The release passes 466 unit tests, 102 integration tests, 5 browser tests and 2 generated-package consumer tests.
+- Combined unit and integration coverage is 86.08% for statements, 73.45% for branches, 91.77% for functions and 86.23% for lines.
+- Node and browser type contracts, ESLint, Prettier, production builds and package-size limits are validated.
+
+## [0.4.3] - 2026-07-22
+
+### Added
+
+- Added `npm run analyze:dependencies` to measure the installed size and browser-bundle contribution of PDFKit, Fontkit and `svg-to-pdfkit`.
+- Reports raw, gzip and Brotli sizes and distinguishes package installation weight from marginal browser-bundle weight.
+- Documents that PDFKit and its dependencies remain external to the Node.js builds, while the browser build uses PDFKit's standalone bundle.
+
+## [0.4.2] - 2026-07-22
+
+### Tests
+
+- Added comprehensive unit coverage for built-in and custom table layouts.
+- Added server-output tests for buffer, Base64, data-URL and file generation, including reuse of a single generated document.
+- Expanded PDF-document tests for resources, attachments, local access policies and PDFKit integration.
+- Added renderer-graphics tests covering vectors, clipping, images, SVGs, QR codes, links, attachments, patterns and graphics-state reuse.
+- Expanded browser-entry coverage with real browser PDF generation and Blob output.
+
+## [0.4.1] - 2026-07-22
+
+### Added
+
+- Added reproducible benchmark scenarios for explicit multi-page documents, large tables, image/SVG-heavy documents and concurrent generation.
+- Added isolated worker-based measurements for generation time, peak RSS, peak heap and output size.
+- Added full and quick benchmark commands, benchmark documentation and README usage instructions.
+- Included benchmark sources in ESLint validation.
+
 ## [0.4.0] - 2026-07-22
 
 ### Origin and scope
@@ -257,5 +324,9 @@ The starting baseline already included, and PDFCraft 0.4.0 retains, the followin
 - browser `SVGElement` support and SVG validation;
 - promise-based output methods.
 
-[Unreleased]: https://github.com/kevinljws/pdfcraft/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/kevinljws/pdfcraft/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/kevinljws/pdfcraft/compare/38fde05...v0.4.4
+[0.4.3]: https://github.com/kevinljws/pdfcraft/compare/2ad9737...38fde05
+[0.4.2]: https://github.com/kevinljws/pdfcraft/compare/9988960...2ad9737
+[0.4.1]: https://github.com/kevinljws/pdfcraft/compare/v0.4.0...9988960
 [0.4.0]: https://github.com/kevinljws/pdfcraft/releases/tag/v0.4.0
