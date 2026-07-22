@@ -1,6 +1,6 @@
 {
 	"name": "pdfcraft",
-	"version": "0.4.2",
+	"version": "0.4.3",
 	"description": "Modern PDF document generation for Node.js and browsers, written in TypeScript",
 	"type": "module",
 	"sideEffects": false,
@@ -66,6 +66,7 @@
 		"build": "npm run typecheck:build && tsdown",
 		"benchmark": "npm run build && node benchmarks/run.mjs",
 		"benchmark:quick": "npm run build && node benchmarks/run.mjs --quick",
+		"analyze:dependencies": "node scripts/analyze-dependency-weight.mjs",
 		"check:size": "node scripts/check-package-size.mjs",
 		"lint": "eslint \"./src/**/*.ts\" \"./tests/**/*.{ts,cts}\" \"./benchmarks/**/*.mjs\" \"./examples/**/*.js\" \"./playground/**/*.{js,jsx}\" \"./*.config.mts\"",
 		"format": "prettier --write .",
