@@ -1,6 +1,7 @@
 import type { Dictionary } from "./common.types";
 
 export type AccessPolicy = (resource: string) => boolean | Promise<boolean>;
+export type LocalAccessPolicy = (resource: string) => boolean;
 export interface HeaderCollection {
 	forEach(callback: (value: string, key: string) => void): void;
 }

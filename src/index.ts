@@ -1,10 +1,10 @@
 import PdfCraftBase from "./core/pdfcraft";
 import OutputDocumentServer from "./output/output-document.server";
 import type { PdfDocumentStream } from "./output/output-document";
-import type { AccessPolicy, PdfCraftOptions } from "./types";
+import type { LocalAccessPolicy, PdfCraftOptions } from "./types";
 
 class PdfCraft extends PdfCraftBase<OutputDocumentServer> {
-	declare localAccessPolicy: AccessPolicy | undefined;
+	declare localAccessPolicy: LocalAccessPolicy | undefined;
 
 	constructor(options: PdfCraftOptions = {}) {
 		super(options);
@@ -13,7 +13,7 @@ class PdfCraft extends PdfCraftBase<OutputDocumentServer> {
 	/**
 	 * @param callback
 	 */
-	setLocalAccessPolicy(callback?: AccessPolicy): void {
+	setLocalAccessPolicy(callback?: LocalAccessPolicy): void {
 		if (callback !== undefined && typeof callback !== "function") {
 			throw new Error("Parameter 'callback' has an invalid type. Function or undefined expected.");
 		}

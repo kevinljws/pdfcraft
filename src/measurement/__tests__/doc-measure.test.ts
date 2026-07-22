@@ -606,6 +606,18 @@ describe("DocMeasure", function () {
 	});
 
 	describe("measureImage", function () {
+		it("registers Uint8Array images as inline image resources", function () {
+			const images: Record<string, string | Uint8Array | ArrayBuffer> = {};
+			const measure = new DocMeasure({ images });
+			const source = new Uint8Array([1, 2, 3]);
+			const imageNode = { image: source } as MeasuredPdfNode;
+
+			measure.convertIfInlineImage(imageNode);
+
+			assert.equal(typeof imageNode.image, "string");
+			assert.strictEqual(images[imageNode.image as string], source);
+		});
+
 		it("should measure images with invalid width", function () {
 			var imageNode = {
 				image: "...",

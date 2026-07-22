@@ -7,7 +7,7 @@ import Renderer from "../rendering/renderer";
 import type { RenderablePage } from "../rendering/renderer.types";
 import { isNumber, isValue } from "../utils/variable-type";
 import { convertToDynamicContent } from "../utils/tools";
-import type { AccessPolicy, FontDescriptors, VirtualFileSystem } from "../types";
+import type { FontDescriptors, LocalAccessPolicy, VirtualFileSystem } from "../types";
 import type { PdfPage } from "../types/internal";
 import type URLResolver from "../resources/url-resolver";
 import type {
@@ -28,7 +28,7 @@ class PdfPrinter {
 	readonly fontDescriptors: FontDescriptors;
 	readonly virtualfs: VirtualFileSystem;
 	readonly urlResolver: URLResolver;
-	readonly localAccessPolicy?: AccessPolicy;
+	readonly localAccessPolicy?: LocalAccessPolicy;
 	pdfKitDoc!: PDFDocument;
 
 	/**
@@ -41,7 +41,7 @@ class PdfPrinter {
 		fontDescriptors: FontDescriptors,
 		virtualfs: VirtualFileSystem,
 		urlResolver: URLResolver,
-		localAccessPolicy?: AccessPolicy,
+		localAccessPolicy?: LocalAccessPolicy,
 	) {
 		this.fontDescriptors = fontDescriptors;
 		this.virtualfs = virtualfs;

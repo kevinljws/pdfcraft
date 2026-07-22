@@ -10,6 +10,7 @@ import type {
 	Dictionary,
 	DocumentDefinition,
 	FontDescriptors,
+	LocalAccessPolicy,
 	PdfCraftOptions,
 	TableLayout,
 	VirtualFileSystem,
@@ -22,7 +23,7 @@ class PdfCraftBase<Output = unknown> {
 	protected tableLayouts: Dictionary<TableLayout>;
 	protected progressCallback?: PdfCraftOptions["progressCallback"];
 	protected urlAccessPolicy?: AccessPolicy;
-	protected localAccessPolicy?: AccessPolicy;
+	protected localAccessPolicy?: LocalAccessPolicy;
 
 	constructor(options: PdfCraftOptions = {}) {
 		this.virtualfs = options.virtualfs ?? new DefaultVirtualFileSystem();

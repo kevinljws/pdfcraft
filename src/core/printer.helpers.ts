@@ -26,7 +26,10 @@ export function getResolvedAttachments(
 			result[name] = { src: attachment };
 			continue;
 		}
-		if (!("src" in attachment) || typeof attachment.src === "object") {
+		if (
+			!("src" in attachment) ||
+			(typeof attachment.src === "object" && !(attachment.src instanceof Uint8Array))
+		) {
 			throw new Error(`Attachment '${name}' contains an unresolved URL`);
 		}
 		result[name] = { ...attachment, src: attachment.src };

@@ -1,8 +1,8 @@
 import type {
-	AccessPolicy,
 	Color,
 	Dictionary,
 	FontDescriptors,
+	LocalAccessPolicy,
 	VfsEncoding,
 	VirtualFileSystem,
 } from "./index";
@@ -75,7 +75,7 @@ export interface FontContainer {
 export interface PrinterDependencies {
 	fonts: FontDescriptors | Dictionary;
 	virtualfs: VirtualFileSystem;
-	localAccessPolicy?: AccessPolicy;
+	localAccessPolicy?: LocalAccessPolicy;
 }
 
 export type ProgressCallback = (progress: number) => void;

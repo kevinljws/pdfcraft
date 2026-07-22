@@ -1,6 +1,11 @@
 import type { Dictionary } from "./common.types";
 import type { TableLayout } from "./content.types";
-import type { AccessPolicy, FontDescriptors, VirtualFileSystem } from "./resource.types";
+import type {
+	AccessPolicy,
+	FontDescriptors,
+	LocalAccessPolicy,
+	VirtualFileSystem,
+} from "./resource.types";
 
 export interface PdfCraftOptions {
 	virtualfs?: VirtualFileSystem;
@@ -8,7 +13,7 @@ export interface PdfCraftOptions {
 	tableLayouts?: Dictionary<TableLayout>;
 	progressCallback?: (progress: number) => void;
 	urlAccessPolicy?: AccessPolicy;
-	localAccessPolicy?: AccessPolicy;
+	localAccessPolicy?: LocalAccessPolicy;
 }
 
 export type Options = PdfCraftOptions;

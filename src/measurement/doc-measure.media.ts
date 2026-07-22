@@ -64,7 +64,13 @@ abstract class DocMeasureMedia {
 		return node;
 	}
 
-	convertIfBase64Image(node: MeasuredPdfNode): void {
+	convertIfInlineImage(node: MeasuredPdfNode): void {
+		if (node.image instanceof Uint8Array) {
+			const label = `$$pdfcraft$$${this.autoImageIndex++}`;
+			this.pdfDocument.images[label] = node.image;
+			node.image = label;
+			return;
+		}
 		if (
 			typeof node.image === "string" &&
 			/^data:(image\/(jpeg|jpg|png)|application\/octet-stream);base64,/.test(node.image)
@@ -77,7 +83,7 @@ abstract class DocMeasureMedia {
 	}
 
 	measureImage(node: MeasuredPdfNode): MeasuredPdfNode {
-		this.convertIfBase64Image(node);
+		this.convertIfInlineImage(node);
 		if (typeof node.image !== "string") {
 			throw new Error("Image node must reference a registered image resource");
 		}

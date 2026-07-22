@@ -125,6 +125,10 @@ describe("PDFDocument", function () {
 			expect(document.provideAttachment("report")).toEqual({
 				src: new Uint8Array([1, 2, 3]),
 			});
+			expect(document.provideAttachment({ src: "attachment.bin", name: "inline.bin" })).toEqual({
+				src: new Uint8Array([1, 2, 3]),
+				name: "inline.bin",
+			});
 		});
 	});
 

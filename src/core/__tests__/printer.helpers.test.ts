@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import type { PdfPage } from "../../types/internal";
-import { calculatePageHeight } from "../printer.helpers";
+import { calculatePageHeight, getResolvedAttachments } from "../printer.helpers";
+
+describe("getResolvedAttachments", () => {
+	it("preserves binary attachment sources", () => {
+		const source = new Uint8Array([1, 2, 3]);
+
+		expect(getResolvedAttachments({ binary: { src: source } })).toEqual({
+			binary: { src: source },
+		});
+	});
+});
 
 describe("calculatePageHeight", () => {
 	it("uses absolute vector geometry without adding its y coordinate twice", () => {

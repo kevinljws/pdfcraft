@@ -9,7 +9,6 @@ import type {
 	PageSize,
 	PageSizeName,
 } from "./common.types";
-import type { ResourceSource } from "./resource.types";
 
 export interface Style {
 	extends?: string | string[];
@@ -44,7 +43,7 @@ export interface Style {
 	link?: string;
 	linkToPage?: number;
 	linkToDestination?: string;
-	linkToFile?: string | { src: ResourceSource | Uint8Array; name?: string; description?: string };
+	linkToFile?: string | { src: string | Uint8Array; name?: string; description?: string };
 	sup?: boolean;
 	sub?: boolean;
 }
@@ -229,7 +228,7 @@ export interface CanvasNode extends ContentBase {
 }
 
 export interface AttachmentNode extends ContentBase {
-	attachment: string | { src: ResourceSource | Uint8Array; name?: string; description?: string };
+	attachment: string | { src: string | Uint8Array; name?: string; description?: string };
 }
 
 export interface TocDefinition {

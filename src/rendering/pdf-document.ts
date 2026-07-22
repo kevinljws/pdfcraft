@@ -2,10 +2,10 @@ import PDFKit from "pdfkit";
 import { isString } from "../utils/variable-type";
 import { decodeBase64, toArrayBuffer } from "../utils/bytes";
 import type {
-	AccessPolicy,
 	Dictionary,
 	FontDescriptors,
 	FontSource,
+	LocalAccessPolicy,
 	VirtualFileSystem,
 } from "../types";
 import type {
@@ -39,10 +39,10 @@ class PDFDocument extends PDFKit {
 	declare fonts: FontDescriptors;
 	declare fontCache: Dictionary<Partial<Record<FontStyle, EmbeddedFont>>>;
 	declare patterns: Dictionary<PDFKit.PDFTilingPattern>;
-	declare images: Dictionary<string>;
+	declare images: Dictionary<string | Uint8Array | ArrayBuffer>;
 	declare attachments: Dictionary<AttachmentDefinition>;
 	declare virtualfs: VirtualFileSystem | null;
-	declare localAccessPolicy: AccessPolicy | undefined;
+	declare localAccessPolicy: LocalAccessPolicy | undefined;
 	declare _font: EmbeddedFont;
 	declare _imageRegistry: Dictionary<EmbeddedImage>;
 	declare _root: { data: { OpenAction?: PDFKit.PDFKitReference } };
@@ -60,12 +60,12 @@ class PDFDocument extends PDFKit {
 
 	constructor(
 		fonts: FontDescriptors = {},
-		images: Dictionary<string> = {},
+		images: Dictionary<string | Uint8Array | ArrayBuffer> = {},
 		patterns: Dictionary<PatternDefinition> = {},
 		attachments: Dictionary<AttachmentDefinition> = {},
 		options: PdfDocumentOptions = {},
 		virtualfs: VirtualFileSystem | null = null,
-		localAccessPolicy?: AccessPolicy,
+		localAccessPolicy?: LocalAccessPolicy,
 	) {
 		super({ ...options, font: options.font ?? undefined });
 
@@ -165,6 +165,12 @@ class PDFDocument extends PDFKit {
 			if (!image) {
 				return src;
 			}
+			if (image instanceof Uint8Array) {
+				return toArrayBuffer(image);
+			}
+			if (image instanceof ArrayBuffer) {
+				return image;
+			}
 			if (!isString(image)) {
 				throw new Error(`Invalid image resource '${src}'`);
 			}
@@ -235,11 +241,8 @@ class PDFDocument extends PDFKit {
 			return obj as AttachmentDefinition;
 		};
 
-		if (typeof src === "object") {
-			return checkRequired(src);
-		}
-
-		let attachment = checkRequired(this.attachments[src]);
+		const attachment =
+			typeof src === "object" ? checkRequired(src) : checkRequired(this.attachments[src]);
 
 		if (this.virtualfs && isString(attachment.src) && this.virtualfs.existsSync(attachment.src)) {
 			const file = this.virtualfs.readFileSync(attachment.src);
@@ -288,7 +291,7 @@ class PDFDocument extends PDFKit {
 	): this {
 		this.validateLocalFile(src);
 		const inMemorySource =
-			src instanceof Uint8Array || src instanceof ArrayBuffer || /^data:.*;base64,/.test(src);
+			src instanceof Uint8Array || src instanceof ArrayBuffer || /^data:.*;base64,/i.test(src);
 		if (inMemorySource && !(options.creationDate instanceof Date)) {
 			options = { ...options, creationDate: new Date(0) };
 		}
@@ -305,7 +308,7 @@ class PDFDocument extends PDFKit {
 			return;
 		}
 
-		if (/^data:/.test(path)) {
+		if (/^data:/i.test(path)) {
 			return;
 		}
 

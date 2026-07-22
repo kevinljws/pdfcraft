@@ -12,6 +12,16 @@ function getExtendedUrl(url: PrinterResourceReference): ExtendedResource {
 		: { url, headers: {} };
 }
 
+function isResourceReference(resource: unknown): resource is PrinterResourceReference {
+	return (
+		typeof resource === "string" ||
+		(resource !== null &&
+			typeof resource === "object" &&
+			"url" in resource &&
+			typeof resource.url === "string")
+	);
+}
+
 function resolveFontSource(
 	source: FontDescriptors[string][keyof FontDescriptors[string]],
 	resolve: (resource: PrinterResourceReference) => string,
@@ -49,18 +59,22 @@ export async function resolvePrinterUrls(
 
 	if (docDefinition.attachments) {
 		for (const [name, attachment] of Object.entries(docDefinition.attachments)) {
-			if (typeof attachment === "object" && "url" in attachment) {
+			if (isResourceReference(attachment)) {
 				docDefinition.attachments[name] = { src: resolve(attachment) };
-			} else if (typeof attachment === "object" && "src" in attachment && attachment.src) {
-				attachment.src = resolve(attachment.src as PrinterResourceReference);
+			} else if (
+				typeof attachment === "object" &&
+				"src" in attachment &&
+				isResourceReference(attachment.src)
+			) {
+				attachment.src = resolve(attachment.src);
 			}
 		}
 	}
 
 	if (docDefinition.files) {
 		for (const file of Object.values(docDefinition.files)) {
-			if (typeof file.src === "string" || (typeof file.src === "object" && "url" in file.src)) {
-				file.src = resolve(file.src as PrinterResourceReference);
+			if (isResourceReference(file.src)) {
+				file.src = resolve(file.src);
 			}
 		}
 	}
