@@ -164,6 +164,17 @@ Useful validation commands include TypeScript checks, ESLint, Prettier, Node tes
 
 Unit tests are colocated as `src/**/__tests__/*.test.ts`. Integration, browser, consumer and public type-contract tests remain under `tests/`.
 
+### Performance benchmarks
+
+Run the quick smoke profile or the complete reproducible benchmark suite:
+
+```sh
+npm run benchmark:quick
+npm run benchmark
+```
+
+The suite measures 100–1,000-page documents, large tables, media-heavy PDFs and concurrent generation. See [benchmarks/README.md](./benchmarks/README.md) for the workloads, JSON output and comparison methodology.
+
 ## Playgrounds
 
 The repository contains two development playgrounds:

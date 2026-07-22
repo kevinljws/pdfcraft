@@ -26,6 +26,7 @@ export default [
 
 	{
 		files: [
+			"benchmarks/**/*.mjs",
 			"examples/**/*.js",
 			"playground/react/vite.config.js",
 			"playground/server/server.js",
