@@ -12,11 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - [bpampuch/pdfmake#2049 — Multi-page table bottom border appears on the previous page](https://github.com/bpampuch/pdfmake/issues/2049): `hLineWhenBroken: false` continues to suppress intermediate closing borders and now leaves the final table border exclusively on the actual final page.
 - [bpampuch/pdfmake#2763 — Top border misplaced with `dontBreakRows`](https://github.com/bpampuch/pdfmake/issues/2763): a row moved as an unbreakable block now carries its top border to the new page while the previous table fragment is closed independently.
 - [bpampuch/pdfmake#2869 — Bottom border shown for a borderless cell at a page break](https://github.com/bpampuch/pdfmake/issues/2869): page-boundary lines now respect the applicable side of each cell border; an explicit `border: [false, false, false, false]` is no longer overridden by the next row's implicit default border.
+- Aligned a forced page-closing table border with an existing row boundary instead of drawing it immediately below, preventing an apparently doubled bottom border before a fixed-height row moves to the next page.
 
 ### Tests
 
 - [bpampuch/pdfmake#1369 — Fixed table row height changes on the second page](https://github.com/bpampuch/pdfmake/issues/1369) and [bpampuch/pdfmake#2876 — First row on page 2 has compressed height](https://github.com/bpampuch/pdfmake/issues/2876): confirmed the current fixed-height pagination behavior and added regressions proving that every row, including the first body row after a repeated header, retains its configured height.
 - Added geometric multi-page table regressions for intermediate closing borders, final-border placement, unbreakable-row top borders and per-cell border suppression across page breaks.
+- Added a sixth manual visual-regression PDF dedicated to table borders across page breaks, including repeated headers, explicit borderless cells and `hLineWhenBroken: false`.
 
 ## [0.6.0] - 2026-07-23
 

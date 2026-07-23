@@ -51,7 +51,7 @@ export function processTable(host: TableLayoutHost, tableNode: LayoutPdfNode): v
 					processor.drawHorizontalLine(
 						rowIndex,
 						host.writer,
-						host.writer.context().y,
+						host.writer.context().y - processor.bottomLineWidth,
 						false,
 						undefined,
 						table.body.length,
@@ -82,7 +82,7 @@ export function processTable(host: TableLayoutHost, tableNode: LayoutPdfNode): v
 					processor.drawHorizontalLine(
 						rowIndex,
 						host.writer,
-						context.y,
+						context.y - processor.bottomLineWidth,
 						false,
 						undefined,
 						table.body.length,

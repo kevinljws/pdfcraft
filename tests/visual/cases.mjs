@@ -279,10 +279,77 @@ const canvasPaths = {
 	],
 };
 
+const paginationBorders = {
+	...common,
+	content: [
+		{ text: "Visual check 6 — table borders across page breaks", style: "title" },
+		{
+			text: "Part A: every page fragment must end with one 2 pt closing border. The intentionally borderless cells in the Open edge column must remain open.",
+			style: "note",
+		},
+		{
+			table: {
+				headerRows: 1,
+				dontBreakRows: true,
+				widths: ["*", 90, 80],
+				body: [
+					[
+						{ text: "Description", bold: true, fillColor: colors.lightBlue },
+						{ text: "Value", bold: true, fillColor: colors.lightBlue },
+						{ text: "Open edge", bold: true, fillColor: colors.lightBlue },
+					],
+					...Array.from({ length: 45 }, (_, index) => [
+						`Pagination row ${index + 1}`,
+						`${(index + 1) * 10}.00`,
+						{
+							text: "no bottom/right border",
+							fontSize: 7,
+							color: colors.slate,
+							border: [false, false, false, false],
+						},
+					]),
+				],
+			},
+			layout: {
+				...tableLayout,
+				hLineWhenBroken: true,
+				hLineWidth: (index, node) =>
+					index === 0 || index === 1 || index === node.table.body.length ? 2 : 0,
+				vLineWidth: () => 1,
+			},
+		},
+		{
+			text: "Part B — hLineWhenBroken: false",
+			style: "heading",
+			pageBreak: "before",
+		},
+		{
+			text: "The long final row crosses a page. Its 3 pt final border must appear only at the real end of the table, never on an intermediate page.",
+			style: "note",
+		},
+		{
+			table: {
+				widths: ["*", 80],
+				body: [
+					["Long final row", "Status"],
+					[{ text: "This content deliberately continues across the page. ".repeat(260) }, "Final"],
+				],
+			},
+			layout: {
+				...tableLayout,
+				hLineWhenBroken: false,
+				hLineWidth: (index, node) => (index === 0 || index === node.table.body.length ? 3 : 0),
+				vLineWidth: () => 1,
+			},
+		},
+	],
+};
+
 export const visualCases = [
 	{ filename: "01-column-sizing.pdf", definition: columnSizing },
 	{ filename: "02-colspan-sizing.pdf", definition: colspanSizing },
 	{ filename: "03-compact-spans.pdf", definition: compactSpans },
 	{ filename: "04-row-heights.pdf", definition: rowHeights },
 	{ filename: "05-canvas-path-offset.pdf", definition: canvasPaths },
+	{ filename: "06-table-pagination-borders.pdf", definition: paginationBorders },
 ];
