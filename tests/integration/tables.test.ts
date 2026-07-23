@@ -80,6 +80,35 @@ describe("Integration test: tables", function () {
 		assert.deepEqual(getColumnText(lines, { cell: 3 }), "Value 2");
 	});
 
+	it("moves an explicitly tall row before it overlaps the bottom margin (#1300)", function () {
+		const pages = testHelper.renderPages("A4", {
+			content: [
+				{
+					table: {
+						heights: [200, 500, 70],
+						body: [["First"], ["Second"], ["Third"]],
+					},
+				},
+			],
+		});
+
+		assert.ok(pages.length >= 2);
+		const pageWithThirdRow = pages.findIndex((page) =>
+			page.items.some(
+				(entry) =>
+					entry.type === "line" && entry.item.inlines.some((inline) => inline.text === "Third"),
+			),
+		);
+		assert.equal(pageWithThirdRow, 1);
+		for (const page of pages) {
+			for (const entry of page.items) {
+				if (entry.type !== "vector") continue;
+				const bottom = Math.max(entry.item.y ?? 0, entry.item.y1 ?? 0, entry.item.y2 ?? 0);
+				assert.ok(bottom <= sizes.A4[1] - testHelper.MARGINS.bottom + 0.001);
+			}
+		}
+	});
+
 	it("aligns a fixed-width table as a complete unit", function () {
 		const render = (tableAlignment: "left" | "center" | "right") => {
 			const pages = testHelper.renderPages("A6", {

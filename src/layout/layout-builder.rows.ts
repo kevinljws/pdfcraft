@@ -94,9 +94,22 @@ class LayoutBuilderRows {
 		const verticalAlignmentCells: Record<number, number> = {};
 		const resolvedWidths = widths;
 
-		// Check if row should break by height
+		// Move a fixed-height row before laying out its content when it fits on a
+		// fresh page. Oversized rows retain the existing split fallback.
 		if (!isUnbreakableRow && (height ?? 0) > this.writer.context().availableHeight) {
-			willBreakByHeight = true;
+			const context = this.writer.context();
+			const page = context.getCurrentPage();
+			const fullPageHeight = page.pageSize.height - page.pageMargins.top - page.pageMargins.bottom;
+			if ((height ?? 0) <= fullPageHeight) {
+				context.moveDown(context.availableHeight);
+				if (snakingColumns) {
+					this.snakingAwarePageBreak();
+				} else {
+					this.writer.moveToNextPage();
+				}
+			} else {
+				willBreakByHeight = true;
+			}
 		}
 
 		// Use the marginX if we are in a top level table/column (not nested)

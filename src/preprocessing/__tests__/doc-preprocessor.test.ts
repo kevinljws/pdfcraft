@@ -239,6 +239,48 @@ describe("DocPreprocessor", function () {
 				/Invalid table cell at row 0, column 0: 'rowSpan' must be a positive integer, received 0/,
 			);
 		});
+
+		it("expands compact colspan rows without overwriting following cells (#1814)", function () {
+			const node = {
+				table: {
+					body: [
+						["Qty", "Description", "Units", "Price", "Total"],
+						[
+							{ text: "Sum", colSpan: 4 },
+							{ text: "2.85", alignment: "right" },
+						],
+					],
+				},
+			};
+
+			const result = docPreprocessor.preprocessNode(node);
+			const row = result.table!.body[1];
+
+			assert.equal(row.length, 5);
+			assert.equal("_span" in row[1] && row[1]._span, true);
+			assert.equal("_span" in row[2] && row[2]._span, true);
+			assert.equal("_span" in row[3] && row[3]._span, true);
+			assert.equal(row[4].text, "2.85");
+		});
+
+		it("inserts compact row-span placeholders without overwriting following rows (#1814)", function () {
+			const result = docPreprocessor.preprocessNode({
+				table: {
+					body: [
+						["A", "B", "C", "D"],
+						[{ text: "1", rowSpan: 2 }, { text: "2", colSpan: 2 }, { text: "3" }],
+						[{ text: "4", colSpan: 3 }],
+					],
+				},
+			});
+			const row = result.table!.body[2];
+
+			assert.equal(row.length, 4);
+			assert.equal("_span" in row[0] && row[0]._span, true);
+			assert.equal(row[1].text, "4");
+			assert.equal("_span" in row[2] && row[2]._span, true);
+			assert.equal("_span" in row[3] && row[3]._span, true);
+		});
 	});
 
 	describe("toc", function () {

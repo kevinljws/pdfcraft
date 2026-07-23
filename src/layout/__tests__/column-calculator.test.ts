@@ -60,7 +60,7 @@ describe("ColumnCalculator", function () {
 			});
 		});
 
-		it("should set calcWidth to minWidth if there is not enough space for the table", function () {
+		it("should proportionally constrain auto columns when their minimums exceed the page", function () {
 			const columns: ColumnWidth[] = [
 				{ width: "auto", _minWidth: 300, _maxWidth: 410 },
 				{ width: "auto", _minWidth: 301, _maxWidth: 420 },
@@ -69,12 +69,14 @@ describe("ColumnCalculator", function () {
 
 			ColumnCalculator.buildColumnWidths(columns, 320);
 
-			columns.forEach(function (col) {
-				assert.equal(col._calcWidth, col._minWidth);
-			});
+			assert.equal(
+				columns.reduce((total, col) => total + (col._calcWidth ?? 0), 0),
+				320,
+			);
+			assert.approximately(columns[0]._calcWidth! / columns[1]._calcWidth!, 300 / 301, 1e-12);
 		});
 
-		it("should set calcWidth of star columns to largest star min-width if there is not enough space for the table", function () {
+		it("should proportionally constrain mixed flexible columns when minimums exceed the page", function () {
 			const columns: ColumnWidth[] = [
 				{ width: "auto", _minWidth: 300, _maxWidth: 410 },
 				{ width: "*", _minWidth: 301, _maxWidth: 420 },
@@ -82,9 +84,12 @@ describe("ColumnCalculator", function () {
 			];
 
 			ColumnCalculator.buildColumnWidths(columns, 320);
-			assert.equal(columns[0]._calcWidth, columns[0]._minWidth);
-			assert.equal(columns[1]._calcWidth, 303);
-			assert.equal(columns[2]._calcWidth, 303);
+			assert.approximately(
+				columns.reduce((total, col) => total + (col._calcWidth ?? 0), 0),
+				320,
+				1e-12,
+			);
+			assert.equal(columns[1]._calcWidth, columns[2]._calcWidth);
 		});
 
 		it("should make columns wider proportionally if table can fit within the available space", function () {
@@ -108,12 +113,44 @@ describe("ColumnCalculator", function () {
 			];
 
 			ColumnCalculator.buildColumnWidths(columns, 320);
-			assert((columns[1]._calcWidth ?? 0) > 31);
+			assert.equal(columns[1]._calcWidth, 42);
 			assert.equal(columns[0]._calcWidth, columns[0]._calcWidth);
 			assert.equal(
 				(columns[0]._calcWidth ?? 0) + (columns[1]._calcWidth ?? 0) + (columns[2]._calcWidth ?? 0),
 				320,
 			);
+		});
+
+		it("keeps an auto column at its natural width before assigning star space (#2129)", function () {
+			const columns: ColumnWidth[] = [
+				{ width: "auto", _minWidth: 35, _maxWidth: 100 },
+				{ width: "*", _minWidth: 50, _maxWidth: 400 },
+			];
+
+			ColumnCalculator.buildColumnWidths(columns, 300);
+
+			assert.equal(columns[0]._calcWidth, 100);
+			assert.equal(columns[1]._calcWidth, 200);
+		});
+
+		it("uses the original index for percentage padding in mixed-width tables (#2180)", function () {
+			const columns: ColumnWidth[] = [
+				{ width: "auto", _minWidth: 10, _maxWidth: 10 },
+				{ width: "50%", _minWidth: 10, _maxWidth: 10 },
+				{ width: "*", _minWidth: 10, _maxWidth: 10 },
+			];
+			const tableNode = {
+				_layout: {
+					paddingLeft: (index: number) => index,
+					paddingRight: (index: number) => index + 1,
+					vLineWidth: (index: number) => index * 2,
+				},
+			} as unknown as PdfNode;
+
+			ColumnCalculator.buildColumnWidths(columns, 90, 10, tableNode);
+
+			// 50% of 100, less padding 1 + 2 and half of borders 2/2 + 4/2.
+			assert.equal(columns[1].width, 44);
 		});
 
 		it("should calculate widths of columns correctly", function () {

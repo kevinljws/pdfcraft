@@ -524,7 +524,7 @@ describe("DocMeasure", function () {
 			assert.equal(tableNode.table.widths[1]._maxWidth, col1max);
 		});
 
-		it("spanning cells, having min-width larger than the sum of min-widths of the columns they span over, should update column min-widths equally", function () {
+		it("assigns spanning-cell minimum growth to star columns before fixed columns", function () {
 			tableNode.layout = emptyTableLayout;
 
 			docPreprocessor.preprocessTable(tableNode);
@@ -547,13 +547,12 @@ describe("DocMeasure", function () {
 			docMeasure.measureTable(tableNode);
 
 			assert(tableNode.table.widths[0]._minWidth > col0min);
-			assert(tableNode.table.widths[1]._minWidth > col1min);
+			assert.equal(tableNode.table.widths[1]._minWidth, col1min);
 
-			assert.equal(tableNode.table.widths[0]._minWidth, col1min + (1 * 12) / 2);
-			assert.equal(tableNode.table.widths[1]._minWidth, col1min + (1 * 12) / 2);
+			assert.equal(tableNode.table.widths[0]._minWidth, col0min + 1 * 12);
 		});
 
-		it("spanning cells, having max-width larger than the sum of max-widths of the columns they span over, should update column max-widths equally", function () {
+		it("assigns spanning-cell maximum growth to star columns before fixed columns", function () {
 			tableNode.layout = emptyTableLayout;
 
 			docPreprocessor.preprocessTable(tableNode);
@@ -573,8 +572,8 @@ describe("DocMeasure", function () {
 			docPreprocessor.preprocessTable(tableNode);
 			docMeasure.measureTable(tableNode);
 
-			assert.equal(tableNode.table.widths[0]._maxWidth, col0max + (1 * 12) / 2);
-			assert.equal(tableNode.table.widths[1]._maxWidth, col1max + (1 * 12) / 2);
+			assert.equal(tableNode.table.widths[0]._maxWidth, col0max + 1 * 12);
+			assert.equal(tableNode.table.widths[1]._maxWidth, col1max);
 		});
 
 		it("calculating widths (when colSpan are used) should take into account cell padding and borders", function () {
@@ -690,6 +689,18 @@ describe("DocMeasure", function () {
 
 			assert.equal(result._height, 42);
 			assert.equal(result._width, 42);
+		});
+
+		it("falls back to intrinsic dimensions for unsupported percentage image widths (#2491)", function () {
+			const result = docMeasure.measureImageWithDimensions(
+				{ image: "...", width: "30%" },
+				{ width: 120, height: 60 },
+			);
+
+			assert.equal(result._width, 120);
+			assert.equal(result._height, 60);
+			assert.ok(Number.isFinite(result._width));
+			assert.ok(Number.isFinite(result._height));
 		});
 
 		it("should measure images with invalid height", function () {

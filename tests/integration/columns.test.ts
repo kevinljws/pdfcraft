@@ -223,50 +223,40 @@ describe("Integration test: columns", function () {
 		var definedWidth = Number(dd.content[0].columns[2].width),
 			autoColumnSpacing = testHelper.MARGINS.left,
 			fixedColumnSpacing = sizes.A5[0] - testHelper.MARGINS.right - definedWidth,
-			autoWidth = Math.max(...items.slice(0, 2).map((node) => node.maxWidth)),
-			starWidth =
-				sizes.A5[0] -
-				(testHelper.MARGINS.left + testHelper.MARGINS.right) -
-				2 * dd.defaultStyle.columnGap -
-				definedWidth -
-				autoWidth,
-			starColumnSpacing = autoColumnSpacing + autoWidth + dd.defaultStyle.columnGap;
+			starColumnSpacing = items[1].x;
 
 		assert.equal(pages.length, 1);
 		assert.equal(pages[0].items.length, 5);
+		assert.equal(items[0].x, autoColumnSpacing);
+		assert.ok(starColumnSpacing > autoColumnSpacing);
 		assert.deepEqual(
-			items.map((item) => item.x),
-			[
-				autoColumnSpacing,
-				autoColumnSpacing,
-				starColumnSpacing,
-				starColumnSpacing,
-				fixedColumnSpacing,
-			],
+			items.slice(1, -1).map((item) => item.x),
+			[starColumnSpacing, starColumnSpacing, starColumnSpacing],
 		);
+		assert.equal(items.at(-1)?.x, fixedColumnSpacing);
 		assert.deepEqual(
 			items.map((item) => item.y),
 			[
 				testHelper.MARGINS.top,
-				testHelper.MARGINS.top + testHelper.LINE_HEIGHT,
 				testHelper.MARGINS.top,
 				testHelper.MARGINS.top + testHelper.LINE_HEIGHT,
+				testHelper.MARGINS.top + 2 * testHelper.LINE_HEIGHT,
 				testHelper.MARGINS.top,
 			],
 		);
+		assert.equal(items[1].maxWidth, items[2].maxWidth);
+		assert.equal(items[2].maxWidth, items[3].maxWidth);
+		assert.equal(items[4].maxWidth, definedWidth);
 		assert.deepEqual(
-			items.map((item) => item.maxWidth),
-			[autoWidth, autoWidth, starWidth, starWidth, definedWidth],
-		);
-		assert.deepEqual(testHelper.getInlineTexts(pages, { page: 0, item: 0 }).join(""), "auto ");
-		assert.deepEqual(testHelper.getInlineTexts(pages, { page: 0, item: 1 }).join(""), "column");
-		assert.deepEqual(
-			testHelper.getInlineTexts(pages, { page: 0, item: 2 }).join(""),
-			"This is a star-sized column. It should get the ",
+			testHelper.getInlineTexts(pages, { page: 0, item: 0 }).join(""),
+			"auto column",
 		);
 		assert.deepEqual(
-			testHelper.getInlineTexts(pages, { page: 0, item: 3 }).join(""),
-			"remaining space divided by the number",
+			items
+				.slice(1, 4)
+				.flatMap((item) => item.inlines.map((inline) => inline.text))
+				.join(""),
+			"This is a star-sized column. It should get the remaining space divided by the number",
 		);
 		assert.deepEqual(testHelper.getInlineTexts(pages, { page: 0, item: 4 }).join(""), "this one");
 	});

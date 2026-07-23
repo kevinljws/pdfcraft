@@ -50,6 +50,13 @@ class RendererGraphics {
 	}
 
 	renderVector(vector: Vector): void {
+		const translatedPath =
+			vector.type === "path" && ((vector.x ?? 0) !== 0 || (vector.y ?? 0) !== 0);
+		if (translatedPath) {
+			this.pdfDocument.save();
+			this.pdfDocument.translate(vector.x ?? 0, vector.y ?? 0);
+		}
+
 		const lineWidth = vector.lineWidth || 1;
 		if (this.vectorState.lineWidth !== lineWidth) {
 			this.pdfDocument.lineWidth(lineWidth);
@@ -180,6 +187,11 @@ class RendererGraphics {
 				strokeOpacity,
 			);
 			this.pdfDocument.stroke();
+		}
+
+		if (translatedPath) {
+			this.pdfDocument.restore();
+			this.resetVectorState();
 		}
 	}
 

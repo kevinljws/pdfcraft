@@ -139,6 +139,24 @@ describe("Renderer graphics", () => {
 		expect(document.fillColor).toHaveBeenCalledWith(pattern, 1);
 	});
 
+	it("applies the layout offset to canvas paths (#1290)", () => {
+		const { document } = createDocument();
+		const renderer = new RendererGraphics(document as unknown as PDFDocument);
+
+		renderer.renderVector({
+			type: "path",
+			d: "M 10 10 L 210 10",
+			x: 40,
+			y: 50,
+			lineColor: "blue",
+		});
+
+		expect(document.save).toHaveBeenCalledOnce();
+		expect(document.translate).toHaveBeenCalledWith(40, 50);
+		expect(document.path).toHaveBeenCalledWith("M 10 10 L 210 10");
+		expect(document.restore).toHaveBeenCalledOnce();
+	});
+
 	it("renders covered images and all supported annotations", () => {
 		const { document, action } = createDocument();
 		const renderer = new RendererGraphics(document as unknown as PDFDocument);

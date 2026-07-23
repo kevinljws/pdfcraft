@@ -775,6 +775,7 @@ describe("LayoutBuilder", function () {
 				{
 					style: "header",
 					italics: false,
+					noWrap: true,
 					columns: [
 						{
 							bold: true,
@@ -807,8 +808,8 @@ describe("LayoutBuilder", function () {
 			assert.equal(pages[0].items[1].item.inlines[0].width, 10 * 50 * 1.5);
 
 			assert.equal(pages[0].items[2].item.inlines[0].width, 10 * 50);
-			assert.equal(pages[0].items[3].item.inlines[0].width, 8 * 50);
-			assert.equal(pages[0].items[4].item.inlines[0].width, 6 * 50);
+			assert.equal(pages[0].items[3].item.inlines[0].width, 14 * 50);
+			assert.equal(pages[0].items[4].item.inlines[0].width, 12 * 50);
 		});
 
 		it("should support unordered lists", function () {

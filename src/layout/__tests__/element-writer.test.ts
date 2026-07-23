@@ -155,11 +155,13 @@ describe("ElementWriter", function () {
 					{ x: 20, y: 20 },
 				],
 			};
+			var path: Vector = { type: "path", d: "M 10 10 L 20 20" };
 
 			ew.addVector(rect);
 			ew.addVector(ellipse);
 			ew.addVector(line);
 			ew.addVector(polyline);
+			ew.addVector(path);
 
 			assert.equal(rect.x, 20);
 			assert.equal(rect.y, 30);
@@ -176,6 +178,9 @@ describe("ElementWriter", function () {
 			assert.equal(polyline.points![0].y, 20);
 			assert.equal(polyline.points![1].x, 30);
 			assert.equal(polyline.points![1].y, 40);
+
+			assert.equal(path.x, 10);
+			assert.equal(path.y, 20);
 		});
 	});
 

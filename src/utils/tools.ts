@@ -32,6 +32,10 @@ export function offsetVector(vector: Vector, x: number, y: number): void {
 				point.y += y;
 			}
 			break;
+		case "path":
+			vector.x = (vector.x ?? 0) + x;
+			vector.y = (vector.y ?? 0) + y;
+			break;
 	}
 }
 

@@ -64,18 +64,29 @@ export function extendWidthsForColumnSpans(
 		const current = getMinMax(node, span.col, span.span, offsets);
 		const minimumDifference = span.minWidth - current.minWidth;
 		const maximumDifference = span.maxWidth - current.maxWidth;
+		const spannedColumns = table.widths.slice(span.col, span.col + span.span);
+		const starColumns = spannedColumns.filter(
+			(column) =>
+				column.width === undefined ||
+				column.width === null ||
+				column.width === "*" ||
+				column.width === "star",
+		);
+		const autoColumns = spannedColumns.filter((column) => column.width === "auto");
+		const expandableColumns =
+			starColumns.length > 0 ? starColumns : autoColumns.length > 0 ? autoColumns : spannedColumns;
 
 		if (minimumDifference > 0) {
-			const increment = minimumDifference / span.span;
-			for (let index = 0; index < span.span; index++) {
-				table.widths[span.col + index]._minWidth += increment;
+			const increment = minimumDifference / expandableColumns.length;
+			for (const column of expandableColumns) {
+				column._minWidth += increment;
 			}
 		}
 
 		if (maximumDifference > 0) {
-			const increment = maximumDifference / span.span;
-			for (let index = 0; index < span.span; index++) {
-				table.widths[span.col + index]._maxWidth += increment;
+			const increment = maximumDifference / expandableColumns.length;
+			for (const column of expandableColumns) {
+				column._maxWidth += increment;
 			}
 		}
 	}

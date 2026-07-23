@@ -14,11 +14,10 @@ function buildColumnWidths<Node extends object>(
 	let autoMax = 0;
 	const starColumns: ColumnWidth[] = [];
 	let starMaxMin = 0;
-	let starMaxMax = 0;
-	const fixedColumns: ColumnWidth[] = [];
+	const fixedColumns: Array<{ column: ColumnWidth; index: number }> = [];
 	const initialAvailableWidth = availableWidth;
 
-	columns.forEach((column) => {
+	columns.forEach((column, index) => {
 		if (isAutoColumn(column)) {
 			autoColumns.push(column);
 			autoMin += column._minWidth;
@@ -26,13 +25,12 @@ function buildColumnWidths<Node extends object>(
 		} else if (isStarColumn(column)) {
 			starColumns.push(column);
 			starMaxMin = Math.max(starMaxMin, column._minWidth);
-			starMaxMax = Math.max(starMaxMax, column._maxWidth);
 		} else {
-			fixedColumns.push(column);
+			fixedColumns.push({ column, index });
 		}
 	});
 
-	fixedColumns.forEach((col, colIndex) => {
+	fixedColumns.forEach(({ column: col, index: colIndex }) => {
 		// width specified as %
 		if (isString(col.width) && /\d+%/.test(col.width)) {
 			// In tables we have to take into consideration the reserved width for paddings and borders
@@ -46,7 +44,7 @@ function buildColumnWidths<Node extends object>(
 				if (colIndex === 0) {
 					// first column assumes whole borderLeft and half of border right
 					reservedWidth = paddingLeft + paddingRight + borderLeft + borderRight / 2;
-				} else if (colIndex === fixedColumns.length - 1) {
+				} else if (colIndex === columns.length - 1) {
 					// last column assumes whole borderRight and half of border left
 					reservedWidth = paddingLeft + paddingRight + borderLeft / 2 + borderRight;
 				} else {
@@ -71,34 +69,33 @@ function buildColumnWidths<Node extends object>(
 	// http://www.w3.org/TR/CSS2/tables.html#width-layout
 	// http://dev.w3.org/csswg/css3-tables-algorithms/Overview.src.htm
 	let minW = autoMin + starMaxMin * starColumns.length;
-	let maxW = autoMax + starMaxMax * starColumns.length;
 	if (minW >= availableWidth) {
-		// case 1 - there's no way to fit all columns within available width
-		// that's actually pretty bad situation with PDF as we have no horizontal scroll
-		// no easy workaround (unless we decide, in the future, to split single words)
-		// currently we simply use minWidths for all columns
+		// Text layout can hard-wrap long tokens. Keep flexible columns inside the
+		// available page width when their measured word widths cannot all fit.
+		const scale = minW > 0 ? Math.max(0, availableWidth) / minW : 0;
 		autoColumns.forEach((col) => {
-			col._calcWidth = col._minWidth;
+			col._calcWidth = col._minWidth * scale;
 		});
 
 		starColumns.forEach((col) => {
-			col._calcWidth = starMaxMin; // starMaxMin already contains padding
+			col._calcWidth = starMaxMin * scale;
 		});
 	} else {
-		if (maxW < availableWidth) {
-			// case 2 - we can fit rest of the table within available space
+		const autoMaxWithMinimumStars = autoMax + starMaxMin * starColumns.length;
+		if (autoMaxWithMinimumStars <= availableWidth) {
+			// Auto columns get their natural width before star columns receive the remainder.
 			autoColumns.forEach((col) => {
 				col._calcWidth = col._maxWidth;
 				availableWidth -= col._calcWidth;
 			});
 		} else {
-			// maxW is too large, but minW fits within available width
+			// Auto columns must interpolate, while reserving the minimum star widths.
 			let W = availableWidth - minW;
-			let D = maxW - minW;
+			let D = autoMax - autoMin;
 
 			autoColumns.forEach((col) => {
 				let d = col._maxWidth - col._minWidth;
-				col._calcWidth = col._minWidth + (d * W) / D;
+				col._calcWidth = col._minWidth + (D > 0 ? (d * W) / D : 0);
 				availableWidth -= col._calcWidth;
 			});
 		}

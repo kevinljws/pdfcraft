@@ -247,7 +247,52 @@ class DocPreprocessor {
 				}
 			}
 		}
-		for (col = 0, cols = body[0].length; col < cols; col++) {
+		const columnCount = body[0].length;
+		const activeRowSpans = Array<number>(columnCount).fill(0);
+		for (let row = 0; row < body.length; row++) {
+			const rowData = body[row];
+			const occupiedColumns = activeRowSpans.filter((remaining) => remaining > 0).length;
+			const expandedLength = rowData.reduce(
+				(total, cell) =>
+					total + (isObject(cell) && isPositiveInteger(cell.colSpan) ? cell.colSpan : 1),
+				0,
+			);
+			if (rowData.length < columnCount && expandedLength + occupiedColumns === columnCount) {
+				const expandedRow: PreprocessedPdfNode[] = [];
+				let sourceIndex = 0;
+				for (let col = 0; col < columnCount; col++) {
+					if (activeRowSpans[col] > 0) {
+						expandedRow.push({ _span: true } as unknown as PreprocessedPdfNode);
+						continue;
+					}
+					const cell = rowData[sourceIndex++];
+					expandedRow.push(cell);
+					const colSpan = isObject(cell) && isPositiveInteger(cell.colSpan) ? cell.colSpan : 1;
+					for (let spanIndex = 1; spanIndex < colSpan; spanIndex++) {
+						expandedRow.push({ _span: true } as unknown as PreprocessedPdfNode);
+						col++;
+					}
+				}
+				body[row] = expandedRow;
+			}
+
+			for (let col = 0; col < columnCount; col++) {
+				activeRowSpans[col] = Math.max(0, activeRowSpans[col] - 1);
+			}
+			const normalizedRow = body[row];
+			for (let col = 0; col < normalizedRow.length; col++) {
+				const cell = normalizedRow[col];
+				if (!isObject(cell) || cell._span || !isPositiveInteger(cell.rowSpan)) continue;
+				const colSpan = isPositiveInteger(cell.colSpan) ? cell.colSpan : 1;
+				for (let spanIndex = 0; spanIndex < colSpan; spanIndex++) {
+					activeRowSpans[col + spanIndex] = Math.max(
+						activeRowSpans[col + spanIndex],
+						cell.rowSpan - 1,
+					);
+				}
+			}
+		}
+		for (col = 0, cols = columnCount; col < cols; col++) {
 			for (row = 0, rows = body.length; row < rows; row++) {
 				const rowData = body[row];
 				let data = rowData[col];
