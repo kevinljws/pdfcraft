@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-23
+
 ### Performance
 
 - Reduced repeated inline-text style setup by resolving every property within one shared style-stack context. In the standard seven-iteration benchmark this lowered median generation time by 13.5% for 100 pages, 13.0% for 500 pages, 15.3% for 1,000 pages, 8.6% for a 2,000-row table and 10.7% for eight concurrent 100-page documents, with unchanged PDF output sizes.
@@ -367,7 +369,8 @@ The starting baseline already included, and PDFCraft 0.4.0 retains, the followin
 - browser `SVGElement` support and SVG validation;
 - promise-based output methods.
 
-[Unreleased]: https://github.com/kljws/pdfcraft/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/kljws/pdfcraft/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/kljws/pdfcraft/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/kljws/pdfcraft/compare/v0.4.4...v0.5.0
 [0.4.4]: https://github.com/kljws/pdfcraft/compare/38fde05...v0.4.4
 [0.4.3]: https://github.com/kljws/pdfcraft/compare/2ad9737...38fde05
